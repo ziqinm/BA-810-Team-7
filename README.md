@@ -1,6 +1,7 @@
 # BA-810-Team-7: Avodaco Prices
 
 ----- Contributors -----
+
 Ziqin Ma, Qiaoling Huang, Shihan Li, Chenran Peng, Elmira Ushirova
 
 ----- File Index -----
