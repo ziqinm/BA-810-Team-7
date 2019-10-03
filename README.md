@@ -1,12 +1,15 @@
 # BA-810-Team-7: Avodaco Prices
 
+----- Contributors -----
+Ziqin Ma, Qiaoling Huang, Shihan Li, Chenran Peng, Elmira Ushirova
+
 ----- File Index -----
 
 `avocado.csv`: the original unedited file from Kaggle
 
 ----- October 3, 2019 -----
 
-This is Cohort A Team 7 of Business Analytics program under Questrom School of Business, Boston University. We are creating this repository for the BA 810 (Supervised Machine Learning) team project. The dataset we are using is the `Avocado Price` dataset from [Kaggle](https://www.kaggle.com/neuromusic/avocado-prices).
+This is Cohort A Team 7 from Business Analytics program in Questrom School of Business, Boston University. We are creating this repository for the BA 810 (Supervised Machine Learning) team project. The dataset we are using is the `Avocado Price` dataset from [Kaggle](https://www.kaggle.com/neuromusic/avocado-prices).
 
 This project is launched on the assumption that we are going to open an "Everything Avocado" store, primarily selling avocado products including avocado toasts, avocado smoothies, and guacamole & chips. We would like to make a budget on the price and volumn (numbers) of raw avocados. Given the `Avodaco Price` dataset, we would like to build models to predict these factors and apply those predictions to adjust our plan.
 
