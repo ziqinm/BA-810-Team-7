@@ -1,6 +1,7 @@
 # BA-810-Team-7: Avodaco Prices
 
 ----- File Index -----
+
 `avocado.csv`: the original unedited file from Kaggle
 
 ----- October 3, 2019 -----
