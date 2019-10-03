@@ -1,5 +1,8 @@
 # BA-810-Team-7: Avodaco Prices
 
+----- File Index -----
+`avocado.csv`: the original unedited file from Kaggle
+
 ----- October 3, 2019 -----
 
 This is Cohort A Team 7 of Business Analytics program under Questrom School of Business, Boston University. We are creating this repository for the BA 810 (Supervised Machine Learning) team project. The dataset we are using is the `Avocado Price` dataset from [Kaggle](https://www.kaggle.com/neuromusic/avocado-prices).
