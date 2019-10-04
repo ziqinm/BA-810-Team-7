@@ -19,3 +19,7 @@ This project contains two phases. Phase I is a brief presentation of choice of d
 The link will direct to the Phase I [slides](https://docs.google.com/presentation/d/1g5iKTYi_I7GHrR_ptDDSRX2YzNs0mWYvDxJCneS36Dc/edit#slide=id.p).
 
 Phase II is the final presentation with the submission of our model script, which will due on October 16, 2019.
+
+----- October 5 -----
+
+WIP
