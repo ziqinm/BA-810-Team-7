@@ -20,6 +20,6 @@ The link will direct to the Phase I [slides](https://docs.google.com/presentatio
 
 Phase II is the final presentation with the submission of our model script, which will due on October 16, 2019.
 
------ October 5 -----
+----- October 7 -----
 
 WIP
