@@ -137,7 +137,7 @@ avo_test %>%
   filter(year == 2018, month == 3)
 
 ###pre model
-f1 <- as.formula(AveragePrice ~ type_conventional + type_organic + TotalVolume + 
+f1 <- as.formula(AveragePrice ~ month+type_conventional + type_organic + TotalVolume + 
                    PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
                    + Area_NewEngland + Area_Southeast
                  + Area_Mideast + Area_RockyMountain
@@ -148,6 +148,7 @@ x1_train <- model.matrix(f1,avo_train)[,-1]
 x1_test <- model.matrix(f1, avo_test)[,-1]
 y_train <- avo_train$AveragePrice
 y_test <- avo_test$AveragePrice
+x1_avo <- model.matrix(f1, avo)[,-1]
 ##run ridge
 fit_ridge <- cv.glmnet(x1_train, y_train, alpha = 0, nfolds = 100)
 fit_ridge$lambda
@@ -173,30 +174,32 @@ lambda_min_mse_test <-fit_ridge$lambda[which.min(mse_test_ridge)]
 lambda_min_mse_train
 lambda_min_mse_test
 
+
 yhat_train_ridge <- predict(fit_ridge, x1_train, s = 0.0261992)
 View(yhat_train_ridge)
-yhat_test_ridge <- predict(fit_ridge, x1_test, s =  0.1534493)
+yhat_test_ridge <- predict(fit_ridge, x1_test, s =   0.1160787)
 View(yhat_test_ridge)
+yhat_1<- predict(fit_ridge, x1_avo, s = lambda_min_mse_test)
 ## Aggregate data into one dataframe
-p1<-avo_test %>%
+p1<-avo %>%
   select(Date, AveragePrice)
-p2<-cbind(p1, yhat_test_ridge)
+p2<-cbind(p1, yhat_1)
 View(p2)
+  
 ## Plot
 p2 %>%
   group_by(Date)%>%
   summarise(meanpriced = mean(AveragePrice))
 View(p2)
+names(p2)[3] <- "pre"
 p2 %>%
   group_by(Date) %>%
   summarise(meanpriced = mean(AveragePrice),meanpre = mean(pre))%>%
   ggplot()+
-  geom_line(mapping = aes(x=Date,
-                           y=meanpriced))+
-  geom_line(mapping = aes(x=Date, y= meanpre), col = "green")
-  
-  
-  
-  
-  
-  
+  geom_point(mapping = aes(x=Date,
+                           y=meanpriced), col = "red")+
+  geom_point(mapping = aes(x=Date, y= meanpre), col = "blue") 
+
+
+
+
