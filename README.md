@@ -7,7 +7,9 @@ Ziqin Ma, Qiaoling Huang, Shihan Li, Chenran Peng, Elmira Ushirova
 ----- File Index -----
 
 `avocado.csv`: the original unedited file from Kaggle
+
 `Presentation 1.R`: the script for plots we used in the first presentation
+
 `Final Sciript Formatted.R`: formatted version of `avocado.csv` for modeling
 
 ----- October 3, 2019 -----
