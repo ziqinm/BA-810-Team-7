@@ -1,0 +1,45 @@
+---
+title: "OSL"
+output: html_document
+---
+
+```{r}
+x<-as.matrix(cbind(int=1,avo$type_conventional,avo$type_organic,avo$TotalVolume,avo$PLU4046,avo$PLU4770, avo$PLU4225,avo$SmallBags,avo$LargeBags,avo$XLargeBags,avo$Area_NewEngland,avo$Area_Southeast,avo$Area_Mideast,avo$Area_RockyMountain,avo$Area_FarWest,avo$Area_GreatLakes,avo$Area_GrateLakes,avo$Area_Southwest,avo$Area_Plains,avo$Area_TotalUS))
+y<-as.vector(avo$AveragePrice)
+i<-diag(1,nrow=nrow(x),ncol=ncol(x))
+n=length(y)
+p<-ncol(x)-1
+xy<-t(x)%*%y
+xxi<-solve(t(x)%*%x)
+h<-x%*%xxi%*%t(x)
+i<-diag(1,nrow=n,ncol=n)
+b<-as.vector(xxi%*%xy)  ##estimated coefficient
+names(b)<-colnames(x)
+yhat<-as.vector(x%*%b)
+res<-y-yhat
+
+sst<-sum((y-mean(y))^2)
+sse<-t(res)%*%res
+ssm<-sst-sse
+
+df.e<-(n-p-1)
+df.t<-(n-1)
+df.m<-df.t-df.e
+
+s2<-as.vector(sse/df.e)
+sigma2<-as.vector(sse/(n-p))
+r2<-1-(sse/sst)
+r2.adj<-1-((sse/df.e)/(sst/df.t))
+aic<-n*log(sse/n)+2*(p+1)
+cp<-(sse/s2)-(n-2*(p+1))
+f<-(ssm/df.m)/(sse/df.e)
+pvalue<-1-pf(f,df.m,df.e)
+
+b.standard.errors<-sqrt(diag(xxi))*sqrt(s2)
+b.t.statistic<-b/b.standard.errors
+b.t.prob<-2*(1-pt(b.t.statistic,df.e))
+b
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
