@@ -136,7 +136,7 @@ avo_test %>%
   filter(year == 2018, month == 3)
 
 ###pre model
-f1 <- as.formula(AveragePrice ~ type_conventional + type_organic + TotalVolume + 
+f1 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + TotalVolume + 
                    PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
                    + Area_NewEngland + Area_Southeast
                  + Area_Mideast + Area_RockyMountain
