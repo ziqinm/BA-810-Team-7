@@ -222,3 +222,5 @@ p2 %>%
   geom_line(aes(Date, meanavg),color = "blue")+
   geom_line(aes(Date, meanavg_hat), color = "red")+
   theme_classic()
+
+
