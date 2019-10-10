@@ -21,6 +21,14 @@ The link will direct to the Phase I [slides](https://docs.google.com/presentatio
 
 Phase II is the final presentation with the submission of our model script, which will due on October 16, 2019.
 
------ October 7 -----
+----- October 9 -----
 
-WIP
+Confirmed with Professor on how to use `Date` column in a time-series prediction. Since we have observed that our train data outcomes (i.e. average price) displays certain trends with time, the main criteria for choosing the optimal model is to find the one that has predictions with the same seasonality as the actual price in the test set. If there exist multiple of models, we will then compare the MSEs and find the one with the lowest.
+
+We will write codes for several machine learning models, including least square, Ridge regression, Lasso regression, Decision tree/Random forest, and Boosting. 
+
+Before getting started, we reformatted the original dataset for our convinience and split the train and test sets. The script for this step is included in `Formatted Script Final.R`.
+
+----- October 10 -----
+
+
