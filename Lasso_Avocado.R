@@ -223,4 +223,4 @@ p2 %>%
   geom_line(aes(Date, meanavg_hat), color = "red")+
   theme_classic()
 
-
+dahjkshd
