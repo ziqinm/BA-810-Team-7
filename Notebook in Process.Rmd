@@ -1,0 +1,36 @@
+---
+title: "BA810 Team 7: Acovado Price Modeling"
+author: Ziqin Ma, Qiaoling Huang, Shihan Li, Chenran Peng, Elmira Ushirova
+date: October 16, 2019
+output: html_notebook
+---
+
+----------
+
+## Introduction ##
+
+### Dataset Debrief ###
+
+### Business Setting ###
+
+### Business Problem ###
+
+--------------
+
+## Descriptive Analysis ##
+
+----------
+
+## Modeling ##
+
+----------
+
+## Result ##
+
+### Which is best ###
+
+### Challenges ###
+
+----------
+
+## Conclusion ##
