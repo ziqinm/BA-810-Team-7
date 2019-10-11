@@ -139,7 +139,7 @@ avo_test %>%
 
 
 ###pre model
-f1 <- as.formula(AveragePrice ~ type_conventional + type_organic + TotalVolume + 
+f1 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + TotalVolume + 
                    PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
                    + Area_NewEngland + Area_Southeast
                  + Area_Mideast + Area_RockyMountain
@@ -152,7 +152,7 @@ y1_train <- avo_train$AveragePrice
 x1_test <- model.matrix(f1, avo_test)[,-1]
 y1_test <- avo_test$AveragePrice
 date_test <- avo_test$Date
-
+x1_avo <- model.matrix(f1, avo)[,-1]
 ## Run lasso
 lmodel <- glmnet(x1_train, y1_train, alpha = 1, nlambda = 100)
 lmodel$lambda
@@ -178,8 +178,11 @@ lambda_min_mse_test
 
 
 ## plot min lambda to predict
+
 y1_test_min_lambda_hat <- predict(lmodel, s = lambda_min_mse_test, newx = x1_test)
 class(y1_test_min_lambda_hat)
+
+y1_avo_min_lambda_hat1 <- predict(lmodel, s = lambda_min_mse_test, newx = x1_avo)
 ## Aggregate all MSEs
 
 dd_mse<-tibble(
@@ -203,17 +206,17 @@ coef(lmodel, s = lambda_min_mse_test)
 
 ## Aggregate data into one dataframe
 library(ggplot2)
-p1<-avo_test %>% 
+df1<-avo %>% 
   select(Date, AveragePrice)
-p2<-cbind(p1, y1_test_min_lambda_hat)
-colnames(p2)
+df2<-cbind(df1, y1_avo_min_lambda_hat1)
+colnames(df2)
 
-names(p2)[3]<-"AveragePrice_hat"
+names(df2)[3]<-"AveragePrice_hat"
 
 ## Plot the actual average price and the predictive average price
-head(p2)
-class(p2$Date)
-p2 %>% 
+head(df2)
+class(df2$Date)
+plot1 <- df2 %>% 
   group_by(Date) %>% 
   summarize(
     meanavg=mean(AveragePrice),
@@ -223,4 +226,12 @@ p2 %>%
   geom_line(aes(Date, meanavg_hat), color = "red")+
   theme_classic()
 
+plot1 + geom_vline(aes(xintercept = as.numeric(Date[113])), 
+                       linetype = "dashed", size = 1,
+                       color = "lightgreen")
 
+  
+
+
+
+ 
