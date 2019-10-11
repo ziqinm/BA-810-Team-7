@@ -176,39 +176,59 @@ lambda_min_mse_test <-lmodel$lambda[which.min(mse_test)]
 lambda_min_mse_train
 lambda_min_mse_test
 
-
-## plot min lambda to predict
-
-y1_test_min_lambda_hat <- predict(lmodel, s = lambda_min_mse_test, newx = x1_test)
-class(y1_test_min_lambda_hat)
-
-y1_avo_min_lambda_hat1 <- predict(lmodel, s = lambda_min_mse_test, newx = x1_avo)
-## Aggregate all MSEs
-
-dd_mse<-tibble(
-  lambda=lmodel$lambda,
-  mse=mse_train,
-  dataset="Train"
-)
-
-dd_mse <-rbind(dd_mse, tibble(
-  lambda=lmodel$lambda,
-  mse=mse_test,
-  dataset = "Test"
-))
-
-dd_mse
-
-## check coef
+## check coefficients
 coef(lmodel, s = lambda_min_mse_test)
 
-## plot the y and y_hat
+## create a new formula for new predictors(eliminate the uncorrelated predictors)
+f2 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + 
+                   PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
+                   Area_NewEngland + Area_Southeast + Area_Mideast + 
+                   Area_RockyMountain + Area_GreatLakes + Area_GrateLakes + 
+                   Area_Southwest + Area_Plains)
+x2_train <- model.matrix(f2,avo_train)[,-1]
+x2_test <- model.matrix(f2, avo_test)[,-1]
 
-## Aggregate data into one dataframe
+## run lasso model again with new predictors
+lmodel2 <- glmnet(x2_train, y1_train, alpha = 1, nlambda = 100)
+
+## predict response with new predictors
+y2_train_hat <- predict(lmodel2, s = lmodel2$lambda, newx = x2_train)
+y2_test_hat <- predict(lmodel2, s = lmodel2$lambda, newx = x2_test)
+
+## compute MES again with new predictors
+## the results shows the taining data MSE is increased
+## when eliminate the predictors which don't have correlation 
+## but the test data MSE still keep the same
+mse_train1 = vector()
+mse_test1 = vector()
+
+for (i in 1:length(lmodel2$lambda)) {
+  mse_train1[i] <- mean((y1_train - y2_train_hat)[,i]^2)
+  mse_test1[i] <- mean((y1_test - y2_test_hat)[,i]^2)
+}
+mse_train1
+mse_test1
+
+lambda_min_mse_train1<- lmodel2$lambda[which.min(mse_train1)]
+lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
+lambda_min_mse_train1
+lambda_min_mse_test1
+
+## compare both model's coef 
+coef(lmodel, s = lambda_min_mse_test)
+coef(lmodel2, s = lambda_min_mse_test1)
+
+
+## Since the second model have the training MSE increased, 
+## The ideal model is still the first "lmodel"
+## we decide to use "lmodel" to run the prediction
+y1_avo_min_lambda_hat <- predict(lmodel, s = lambda_min_mse_test, newx = x1_avo)
+class(y1_avo_min_lambda_hat)
+## Aggregate data into one dataframe for the first model prediction
 library(ggplot2)
 df1<-avo %>% 
   select(Date, AveragePrice)
-df2<-cbind(df1, y1_avo_min_lambda_hat1)
+df2<-cbind(df1, y1_avo_min_lambda_hat)
 colnames(df2)
 
 names(df2)[3]<-"AveragePrice_hat"
@@ -219,11 +239,11 @@ class(df2$Date)
 plot1 <- df2 %>% 
   group_by(Date) %>% 
   summarize(
-    meanavg=mean(AveragePrice),
-    meanavg_hat=mean(AveragePrice_hat)) %>%
+    MeanAvg=mean(AveragePrice),
+    MeanAvg_hat=mean(AveragePrice_hat)) %>%
   ggplot()+
-  geom_line(aes(Date, meanavg),color = "blue")+
-  geom_line(aes(Date, meanavg_hat), color = "red")+
+  geom_line(aes(Date, MeanAvg),color = "blue")+
+  geom_line(aes(Date, MeanAvg_hat), color = "red")+
   theme_classic()
 
 plot1 + geom_vline(aes(xintercept = as.numeric(Date[113])), 
