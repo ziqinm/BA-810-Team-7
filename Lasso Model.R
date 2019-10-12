@@ -176,8 +176,14 @@ lambda_min_mse_test <-lmodel$lambda[which.min(mse_test)]
 lambda_min_mse_train
 lambda_min_mse_test
 
-## check coefficients
-coef(lmodel, s = lambda_min_mse_test)
+## Using Cross-validation fucntion to find the best lambda
+set.seed(1)
+cv.out = cv.glmnet(x1_train, y1_train, alpha = 1)
+## plot the lambda
+plot(cv.out)
+##check the best lambda
+bestlam = cv.out$lambda.min
+bestlam ## the best lamdba for training dataset is same as lambda_min_mse_train
 
 ## create a new formula for new predictors(eliminate the uncorrelated predictors)
 f2 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + 
@@ -214,10 +220,11 @@ lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
 lambda_min_mse_train1
 lambda_min_mse_test1
 
-## compare both model's coef 
-coef(lmodel, s = lambda_min_mse_test)
-coef(lmodel2, s = lambda_min_mse_test1)
-
+## check coefficients for f1 and f2 model
+f1coef<-coef(lmodel, s = lambda_min_mse_test)
+f2coef<-coef(lmodel2, s = lambda_min_mse_test1)
+f1coef 
+f2coef
 
 ## Since the second model have the training MSE increased, 
 ## The ideal model is still the first "lmodel"
@@ -253,5 +260,3 @@ plot1 + geom_vline(aes(xintercept = as.numeric(Date[113])),
   
 
 
-
- 
