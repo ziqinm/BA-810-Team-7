@@ -4,6 +4,7 @@ library(tidyverse)
 library(lubridate)
 library(fastDummies)
 library(glmnet)
+library(zoo)
 
 ds <- read_csv("/cloud/project/avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
 glimpse(ds)
@@ -198,7 +199,8 @@ p2 %>%
   ggplot()+
   geom_point(mapping = aes(x=Date,
                            y=meanpriced), col = "red")+
-  geom_point(mapping = aes(x=Date, y= meanpre), col = "blue") 
+  geom_point(mapping = aes(x=Date, y= meanpre), col = "blue")+
+  geom_vline(xintercept=as.numeric(as.Date("2017-03-01")))
 
 
 
