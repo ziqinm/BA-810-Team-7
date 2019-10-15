@@ -6,6 +6,7 @@ library(fastDummies)
 library(ggplot2)
 library(ggthemes)
 library(gbm)
+theme_set(theme_bw())
 
 ds <- read_csv("avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
 # glimpse(ds)
@@ -151,3 +152,4 @@ x1_test <- model.matrix(f1, avo_test)[, -1]
 
 y1_train <- avo_train$AveragePrice
 y1_test <- avo_test$AveragePrice
+
