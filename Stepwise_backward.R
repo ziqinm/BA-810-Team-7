@@ -159,3 +159,23 @@ step_backward$results
 step_backward$bestTune
 
 coef(step_backward$finalModel, 25)
+
+## try another way
+fitall <- lm(AveragePrice ~ month + Date + region + Area + type_conventional + 
+               type_organic + TotalVolume + PLU4046 + PLU4225 + PLU4770 + 
+               TotalBags + SmallBags + LargeBags + XLargeBags + other_PLU + 
+               Area_NewEngland + Area_Southeast + Area_Mideast + Area_RockyMountain + 
+               Area_FarWest + Area_GreatLakes + Area_GrateLakes + Area_Southwest + 
+               Area_Plains + Area_TotalUS, data = avo_train)
+formula(fitall)
+
+## run model
+step(fitall, direction = "backward")
+
+## forward
+fitstart <- lm(AveragePrice ~ 1, data = avo_train)
+summary(fitstart)
+
+## run forward
+step(fitstart, direction = "forward", scope = formula(fitall))
+step(fitstart, direction = "both", scope = formula(fitall))
