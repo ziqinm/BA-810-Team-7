@@ -1,13 +1,17 @@
 options(stringsAsFactors = FALSE)
-
+install.packages("fastDummies")
+install.packages("glmnet")
+install.packages("caret")
+install.packages("leaps")
+library(readr)
 library(tidyverse)
 library(lubridate)
 library(fastDummies)
 library(glmnet)
-library(zoo)
+library(caret)
+library(leaps)
+ds <- read_csv("../Downloads/avocado.csv")
 
-ds <- read_csv("/cloud/project/avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
-glimpse(ds)
 
 # Switch the order of rows
 ds <- ds %>% 
@@ -137,71 +141,41 @@ avo_test <- avo %>% filter(as.Date(Date) >= "2017-03-01")
 avo_test %>%
   filter(year == 2018, month == 3)
 
-###pre model
-f1 <- as.formula(AveragePrice ~ month+type_conventional + type_organic + TotalVolume + 
-                   PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
-                   + Area_NewEngland + Area_Southeast
-                 + Area_Mideast + Area_RockyMountain
-                 + Area_FarWest + Area_GreatLakes
-                 + Area_GrateLakes + Area_Southwest
-                 + Area_Plains + Area_TotalUS)
-x1_train <- model.matrix(f1,avo_train)[,-1]
-x1_test <- model.matrix(f1, avo_test)[,-1]
-y_train <- avo_train$AveragePrice
-y_test <- avo_test$AveragePrice
-x1_avo <- model.matrix(f1, avo)[,-1]
-##run ridge
-fit_ridge <- cv.glmnet(x1_train, y_train, alpha = 0, nfolds = 100)
-fit_ridge$lambda
-##Predict response
-yhat_train_ridge <- predict(fit_ridge, x1_train, s = fit_ridge$lambda)
-View(yhat_train_ridge)
-yhat_test_ridge <- predict(fit_ridge, x1_test, s = fit_ridge$lambda)
-View(yhat_test_ridge)
+## use cross-validation to control 
+set.seed(123)
+train_control <- trainControl(method = "cv", number = 10)
+## train the model
+avo_train1<-avo_train %>% 
+  select(-ID, - year)
+head(avo_tain1)
+step_backward <- train(AveragePrice ~., data = avo_train1,
+                                        method = "leapBackward",
+                                        tuneGrid = data.frame(nvmax = 1: 25),
+                                        trcontrol = train_control
+                                        )
+## the result is wiered 
+step_backward$results
 
-mse_train_ridge = vector()
-mse_test_ridge = vector()
-mse_train_ridge <- mean((y_train - yhat_train_ridge)^2)
-mse_test_ridge <-mean((y_test-yhat_test_ridge)^2)
-for (i in 1:length(fit_ridge$lambda)) {
-  mse_train_ridge[i] <- mean((y_train - yhat_train_ridge)[,i]^2)
-  mse_test_ridge[i] <- mean((y_test - yhat_test_ridge)[,i]^2)
-}
-mse_train_ridge
-mse_test_ridge
+step_backward$bestTune
 
-lambda_min_mse_train<- fit_ridge$lambda[which.min(mse_train_ridge)]
-lambda_min_mse_test <-fit_ridge$lambda[which.min(mse_test_ridge)]
-lambda_min_mse_train
-lambda_min_mse_test
+coef(step_backward$finalModel, 25)
 
+## try another way
+fitall <- lm(AveragePrice ~ month + Date + region + Area + type_conventional + 
+               type_organic + TotalVolume + PLU4046 + PLU4225 + PLU4770 + 
+               TotalBags + SmallBags + LargeBags + XLargeBags + other_PLU + 
+               Area_NewEngland + Area_Southeast + Area_Mideast + Area_RockyMountain + 
+               Area_FarWest + Area_GreatLakes + Area_GrateLakes + Area_Southwest + 
+               Area_Plains + Area_TotalUS, data = avo_train)
+formula(fitall)
 
-yhat_train_ridge <- predict(fit_ridge, x1_train, s = 0.0261992)
-View(yhat_train_ridge)
-yhat_test_ridge <- predict(fit_ridge, x1_test, s =   0.1160787)
-View(yhat_test_ridge)
-yhat_1<- predict(fit_ridge, x1_avo, s = lambda_min_mse_test)
-## Aggregate data into one dataframe
-p1<-avo %>%
-  select(Date, AveragePrice)
-p2<-cbind(p1, yhat_1)
-View(p2)
-  
-## Plot
-p2 %>%
-  group_by(Date)%>%
-  summarise(meanpriced = mean(AveragePrice))
-View(p2)
-names(p2)[3] <- "pre"
-p2 %>%
-  group_by(Date) %>%
-  summarise(meanpriced = mean(AveragePrice),meanpre = mean(pre))%>%
-  ggplot()+
-  geom_point(mapping = aes(x=Date,
-                           y=meanpriced), col = "red")+
-  geom_point(mapping = aes(x=Date, y= meanpre), col = "blue")+
-  geom_vline(xintercept=as.numeric(as.Date("2017-03-01")))
+## run model
+step(fitall, direction = "backward")
 
+## forward
+fitstart <- lm(AveragePrice ~ 1, data = avo_train)
+summary(fitstart)
 
-
-
+## run forward
+step(fitstart, direction = "forward", scope = formula(fitall))
+step(fitstart, direction = "both", scope = formula(fitall))

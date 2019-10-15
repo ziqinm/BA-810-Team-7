@@ -1,12 +1,15 @@
-options(stringsAsFactors = FALSE)
+### Boosting ###
+
+options(stringAsFactors = FALSE)
 
 library(tidyverse)
 library(lubridate)
 library(fastDummies)
-library(glmnet)
-library(zoo)
+library(ggplot2)
+library(ggthemes)
+library(gbm)
 
-ds <- read_csv("/cloud/project/avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
+ds <- read_csv("Desktop/Boston University/Academics/Fall/BA 810/Project/copy.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
 glimpse(ds)
 
 # Switch the order of rows
@@ -114,9 +117,6 @@ View(avo)
 
 
 ### Rename Column Names ##3
-avoFormat <- avo
-colnames(avoFormat)
-
 names(avo)[10] <- "TotalVolume"
 names(avo)[14] <- "TotalBags"
 names(avo)[15] <- "SmallBags"
@@ -138,7 +138,7 @@ avo_test %>%
   filter(year == 2018, month == 3)
 
 ###pre model
-f1 <- as.formula(AveragePrice ~ month+type_conventional + type_organic + TotalVolume + 
+f1 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + TotalVolume + 
                    PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
                    + Area_NewEngland + Area_Southeast
                  + Area_Mideast + Area_RockyMountain
@@ -146,62 +146,48 @@ f1 <- as.formula(AveragePrice ~ month+type_conventional + type_organic + TotalVo
                  + Area_GrateLakes + Area_Southwest
                  + Area_Plains + Area_TotalUS)
 x1_train <- model.matrix(f1,avo_train)[,-1]
-x1_test <- model.matrix(f1, avo_test)[,-1]
-y_train <- avo_train$AveragePrice
-y_test <- avo_test$AveragePrice
-x1_avo <- model.matrix(f1, avo)[,-1]
-##run ridge
-fit_ridge <- cv.glmnet(x1_train, y_train, alpha = 0, nfolds = 100)
-fit_ridge$lambda
-##Predict response
-yhat_train_ridge <- predict(fit_ridge, x1_train, s = fit_ridge$lambda)
-View(yhat_train_ridge)
-yhat_test_ridge <- predict(fit_ridge, x1_test, s = fit_ridge$lambda)
-View(yhat_test_ridge)
+x1_test <- model.matrix(f1, avo_test)[, -1]
 
-mse_train_ridge = vector()
-mse_test_ridge = vector()
-mse_train_ridge <- mean((y_train - yhat_train_ridge)^2)
-mse_test_ridge <-mean((y_test-yhat_test_ridge)^2)
-for (i in 1:length(fit_ridge$lambda)) {
-  mse_train_ridge[i] <- mean((y_train - yhat_train_ridge)[,i]^2)
-  mse_test_ridge[i] <- mean((y_test - yhat_test_ridge)[,i]^2)
-}
-mse_train_ridge
-mse_test_ridge
+y1_train <- avo_train$AveragePrice
+y1_test <- avo_test$AveragePrice
 
-lambda_min_mse_train<- fit_ridge$lambda[which.min(mse_train_ridge)]
-lambda_min_mse_test <-fit_ridge$lambda[which.min(mse_test_ridge)]
-lambda_min_mse_train
-lambda_min_mse_test
+tree_train <- avo_train %>% 
+  select(-AveragePrice, everything())
 
+boosting <- gbm(f1,
+                data = avo_train,
+                distribution = "gaussian",
+                n.trees = 300,
+                interaction.depth = 4,
+                shrinkage = 0.1)
+relative.influence(boosting)
 
-yhat_train_ridge <- predict(fit_ridge, x1_train, s = 0.0261992)
-View(yhat_train_ridge)
-yhat_test_ridge <- predict(fit_ridge, x1_test, s =   0.1160787)
-View(yhat_test_ridge)
-yhat_1<- predict(fit_ridge, x1_avo, s = lambda_min_mse_test)
-## Aggregate data into one dataframe
-p1<-avo %>%
-  select(Date, AveragePrice)
-p2<-cbind(p1, yhat_1)
-View(p2)
-  
-## Plot
-p2 %>%
-  group_by(Date)%>%
-  summarise(meanpriced = mean(AveragePrice))
-View(p2)
-names(p2)[3] <- "pre"
-p2 %>%
-  group_by(Date) %>%
-  summarise(meanpriced = mean(AveragePrice),meanpre = mean(pre))%>%
-  ggplot()+
-  geom_point(mapping = aes(x=Date,
-                           y=meanpriced), col = "red")+
-  geom_point(mapping = aes(x=Date, y= meanpre), col = "blue")+
-  geom_vline(xintercept=as.numeric(as.Date("2017-03-01")))
+yhat_btree <- predict(boosting, avo_train, n.trees = 300)
+mse_btree <- mean((yhat_btree - y1_train) ^ 2)
+print(mse_btree)
+# 0.02389259
 
+yhat_btree_test <- predict(boosting, avo_test, n.trees = 300)
+mse_btree_test <- mean((yhat_btree_test - y1_test) ^ 2)
+print(mse_btree_test)
+# 0.1296994
 
+avo_train$prediction_btree <- yhat_btree
+avo_test$prediction_btree <- yhat_btree_test
 
+avo_plot <- rbind(avo_train, avo_test)
 
+btree_plot <- avo_plot %>% 
+  group_by(Date) %>% 
+  summarise(meanAvg = mean(AveragePrice),
+            meanAvg_hat = mean(prediction_btree)) %>% 
+  ggplot() +
+  geom_line(aes(Date, meanAvg), col = "navy") + 
+  geom_line(aes(Date, meanAvg_hat), col = "darkseagreen") + 
+  labs(title = "Boosting without trees",
+       subtitle = "ntree = 300, depth = 4, shrinkage = 0.1") +
+  theme_clean()
+
+btree_plot + 
+  geom_vline(aes(xintercept = as.numeric(Date[113])),
+             linetype = "dashed", size = 1, col = "orange")

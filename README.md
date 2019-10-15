@@ -26,7 +26,7 @@ Phase II is the final presentation with the submission of our model script, whic
 
 ----- October 9 -----
 
-Confirmed with Professor on how to use `Date` column in a time-series prediction. Since we have observed that our train data outcomes (i.e. average price) displays certain trends with time, the main criteria for choosing the optimal model is to find the one that has predictions with the same seasonality as the actual price in the test set. If there exist multiple of models, we will then compare the MSEs and find the one with the lowest.
+Confirmed with Professor on how to use `Date` column in a time-series prediction. Since we have observed that our train data outcomes (i.e. average price) displays certain trends with time, the main criteria for choosing the optimal model is to find the one that has predictions with the same seasonality as the actual price in the **entire** set. If there exist multiple of models, we will then compare the MSEs and find the one with the lowest.
 
 We will write codes for several machine learning models, including least square, Ridge regression, Lasso regression, Decision tree/Random forest, and Boosting. 
 
@@ -34,4 +34,6 @@ Before getting started, we reformatted the original dataset for our convinience 
 
 ----- October 10 -----
 
+The team was actively working on modeling. We added a new prediction, `month` column, into our base function to adapt the time. Also, professor provided us an insight to predict the prices more accurately in Lasso model.
 
+----- October 15 -----
