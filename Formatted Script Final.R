@@ -3,6 +3,9 @@ options(stringsAsFactors = FALSE)
 library(tidyverse)
 library(lubridate)
 library(fastDummies)
+library(ggplot2)
+library(ggthemes)
+library(gbm)
 
 ds <- read_csv("desktop/avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
 glimpse(ds)
