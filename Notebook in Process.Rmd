@@ -305,6 +305,7 @@ We could have tried to increase the number of trees to see if it would give bett
 
 * ### Lasso with a New Variable ###
 
+ds <- read_csv("/cloud/project/avocado3.csv")
 ## Run lasso
 ```{r}
 lmodel <- glmnet(x1_train, y1_train, alpha = 1, nlambda = 100)
