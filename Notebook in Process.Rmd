@@ -163,15 +163,12 @@ avo <- dsNew %>%
 
 avo <- dummy_cols(avo, select_columns = "Area")
 
-View(avo)
-
 ```
 
 
 Rename Column Names
 ```{r}
-avoFormat <- avo
-colnames(avoFormat)
+colnames(avo)
 
 names(avo)[10] <- "TotalVolume"
 names(avo)[14] <- "TotalBags"
@@ -181,11 +178,7 @@ names(avo)[17] <- "XLargeBags"
 names(avo)[11] <- "PLU4046"
 names(avo)[12] <- "PLU4225"
 names(avo)[13] <- "PLU4770"
-
-colnames(avo)
-
 ```
-
 
 ----------
 
@@ -305,12 +298,13 @@ We could have tried to increase the number of trees to see if it would give bett
 
 * ### Lasso with a New Variable ###
 
-## Run lasso
+Run lasso
 ```{r}
 lmodel <- glmnet(x1_train, y1_train, alpha = 1, nlambda = 100)
 lmodel$lambda
 ```
-## Predict response
+
+Predict response
 ```{r}
 y1_train_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_train)
 y1_test_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_test)
@@ -332,21 +326,25 @@ lambda_min_mse_test <-lmodel$lambda[which.min(mse_test)]
 lambda_min_mse_train
 lambda_min_mse_test
 ```
-## Using Cross-validation fucntion to find the best lambda
+
+Using Cross-validation fucntion to find the best lambda
 ```{r}
 set.seed(1)
 cv.out = cv.glmnet(x1_train, y1_train, alpha = 1)
 ```
-## plot the lambda
+
+Plot the lambda
 ```{r}
 plot(cv.out)
 ```
-##check the best lambda
+
+Check the best lambda
 ```{r}
 bestlam = cv.out$lambda.min
 bestlam ## the best lamdba for training dataset is same as lambda_min_mse_train
 ```
-## create a new formula for new predictors(eliminate the uncorrelated predictors)
+
+Create a new formula for new predictors(eliminate the uncorrelated predictors)
 ```{r}
 f3 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + 
                    PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
@@ -356,19 +354,19 @@ f3 <- as.formula(AveragePrice ~ month + type_conventional + type_organic +
 x2_train <- model.matrix(f3,avo_train)[,-1]
 x2_test <- model.matrix(f3, avo_test)[,-1]
 ```
-## run lasso model again with new predictors
+
+Run lasso model again with new predictors
 ```{r}
 lmodel2 <- glmnet(x2_train, y1_train, alpha = 1, nlambda = 100)
 ```
-## predict response with new predictors
+
+Predict response with new predictors
 ```{r}
 y2_train_hat <- predict(lmodel2, s = lmodel2$lambda, newx = x2_train)
 y2_test_hat <- predict(lmodel2, s = lmodel2$lambda, newx = x2_test)
 ```
-## compute MES again with new predictors
-## the results shows the taining data MSE is increased
-## when eliminate the predictors which don't have correlation 
-## but the test data MSE still keep the same
+
+Compute MES again with new predictors. The results shows the taining data MSE is increased when eliminate the predictors which don't have correlation but the test data MSE still keep the same.
 ```{r}
 mse_train1 = vector()
 mse_test1 = vector()
@@ -385,13 +383,15 @@ lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
 lambda_min_mse_train1
 lambda_min_mse_test1
 ```
-## check coefficients for f2 and f3 model
+
+Check coefficients for f2 and f3 model
 ```{r}
 f2coef<-coef(lmodel, s = lambda_min_mse_test)
 f3coef<-coef(lmodel2, s = lambda_min_mse_test1)
 f2coef 
 f3coef
 ```
+
 ## Since the second model have the training MSE increased, 
 ## The ideal model is still the first "lmodel"
 ## we decide to use "lmodel" to run the prediction
@@ -401,7 +401,6 @@ class(y1_avo_min_lambda_hat)
 ```
 ## Aggregate data into one dataframe for the first model prediction
 ```{r}
-library(ggplot2)
 df2<-avo %>% 
   select(Date, AveragePrice)
 df3<-cbind(df2, y1_avo_min_lambda_hat)
