@@ -250,6 +250,62 @@ y1_test <- avo_test$AveragePrice
 
 * ### Random Forests ###
 
+Building the model first:
+
+```{r}
+fit_rf <- randomForest(f1,
+                       avo_train,
+                       ntree=300,
+                       do.trace=F)
+varImpPlot(fit_rf)
+```
+Predicting our y_hats for train and for test data:
+
+```{r}
+yhat_rf_train <- predict(fit_rf, avo_train)
+yhat_rf_test <- predict(fit_rf, avo_test)
+```
+
+Calculating MSE for both train and test:
+
+```{r}
+mse_rf_train <- mean((yhat_rf_train - y1_train) ^ 2)
+mse_rf_test <- mean((yhat_rf_test - y1_test)^2)
+
+print(mse_rf_train)
+print(mse_rf_test)
+```
+
+Plotting actual prices and predicted prices on one plot:
+Have to prepare data to use it for the plot first by creating a dataframe with Date, AveragePrice and Predicted Price (y_hat) for both train and test:
+
+```{r}
+avo %>% 
+  select(Date, AveragePrice) -> plot_rf_full
+
+yhat_rf_full <- c(yhat_rf_train,yhat_rf_test )
+
+cbind(plot_rf_full, yhat_rf_full) -> plot_rf_full1  
+```
+
+
+
+```{r}
+plot_rf_full1 %>% 
+  group_by(Date) %>% 
+  summarise(mean_y = mean(AveragePrice),
+            mean_yhat = mean(yhat_rf_full)) %>% 
+  ggplot() +
+  geom_line(aes(x = Date, y = mean_y), col = "blue") +
+  geom_line(aes(x = Date, y = mean_yhat), col = "red") -> rf_graph
+ 
+rf_graph + geom_vline(aes(xintercept = as.numeric(Date[113])), 
+                   linetype = "dashed", size = 1,
+                   color = "lightgreen")
+```
+Conclusion for random forest: As we can see on the graph above, with 300 trees, random forest fit train data pretty well, however it is doing bad with test data. Nevertheless, the graph looks better than other less flexible models we have used.
+We could have tried to increase the number of trees to see if it would give better estimations, however, unfortunately, the capacity of RStudios that we have used is not enough to run random forests with more than 300 trees.
+
 
 
 
