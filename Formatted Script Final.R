@@ -146,6 +146,7 @@ f1 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + Total
                  + Area_FarWest + Area_GreatLakes
                  + Area_GrateLakes + Area_Southwest
                  + Area_Plains + Area_TotalUS)
+# 20 predictors
 
 x1_train <- model.matrix(f1,avo_train)[,-1]
 x1_test <- model.matrix(f1, avo_test)[, -1]
