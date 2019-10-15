@@ -1,0 +1,137 @@
+---
+title: "forward"
+output: html_document
+---
+
+```{r}
+fit_fw <- lm(AveragePrice ~ 1, data = avo_train)
+yhat_train <- predict(fit_fw, avo_train)
+mse_train <- mean((avo_train$AveragePrice - yhat_train) ^ 2)
+yhat_test <- predict(fit_fw, avo_test)
+mse_test <- mean((avo_test$AveragePrice - yhat_test) ^ 2)
+
+log_fw <-
+tibble(
+xname = "intercept",
+model = deparse(fit_fw$call),
+mse_train = mse_train,
+mse_test = mse_test
+)
+
+best_mse_train <- NA
+best_mse_test <- NA
+best_fit_fw <- NA
+best_xname <- NA
+for (xname in xnames) {
+# take a moment to examine and understand the following line
+fit_fw_tmp <- update(fit_fw, as.formula(paste0(" ~ ", xname)))
+# compute MSE train
+yhat_train_tmp <- predict(fit_fw_tmp, avo_train)
+mse_train_tmp <- mean((avo_train$AveragePrice - yhat_train_tmp) ^ 2)
+# compute MSE test
+yhat_test_tmp <- predict(fit_fw_tmp, avo_test)
+mse_test_tmp <- mean((avo_test$AveragePrice - yhat_test_tmp) ^ 2)
+# if this is the first predictor to be examined,
+# or if this predictors yields a lower MSE that the current
+# best, then store this predictor as the current best predictor
+if (is.na(best_mse_test) | mse_test_tmp < best_mse_test) {
+2
+best_xname <- xname
+best_fit_fw <- fit_fw_tmp
+best_mse_train <- mse_train_tmp
+best_mse_test <- mse_test_tmp
+}
+}
+#Which variable increases out-of-sample predictive accuracy the most
+print(best_xname)
+```
+
+```{r}
+log_fw <-
+log_fw %>% add_row(
+xname = best_xname,
+model = paste0(deparse(best_fit_fw$call), collapse = ""),
+mse_train = best_mse_train,
+mse_test = best_mse_test
+)
+
+log_fw
+
+xnames <- xnames[xnames[xnames!=best_xname]]
+
+# here is a complete solution
+xnames <- colnames(avo_train)
+xnames <- xnames[!xnames %in% c("type_conventional","type_organic", "TotalVolume", "PLU4046", "PLU4770", "PLU4225","SmallBags", "LargeBags","XLargeBags","Area_NewEngland","Area_Southeast","Area_Mideast","Area_RockyMountain","Area_FarWest","Area_GreatLakes","Area_GrateLakes","Area_Southwest","Area_Plains + Area_TotalUS")]
+fit_fw <- lm(AveragePrice ~ 1, data = avo_train)
+yhat_train <- predict(fit_fw, avo_train)
+yhat_test <- predict(fit_fw, avo_test)
+mse_train <- mean((avo_train$AveragePrice - yhat_train) ^ 2)
+mse_test <- mean((avo_test$AveragePrice - yhat_test) ^ 2)
+xname <- "intercept"
+log_fw <-
+tibble(
+xname = xname,
+model = paste0(deparse(fit_fw$call), collapse = ""),
+mse_train = mse_train,
+mse_test = mse_test
+)
+while (length(xnames) > 0) {
+best_mse_train <- NA
+best_mse_test <- NA
+best_fit_fw <- NA
+best_xname <- NA
+# select the next best predictor
+for (xname in xnames) {
+# take a moment to examine and understand the following line
+fit_fw_tmp <- update(fit_fw, as.formula(paste0(". ~ . + ", xname)))
+# compute MSE train
+yhat_train_tmp <- predict(fit_fw_tmp, avo_train)
+mse_train_tmp <- mean((avo_train$AveragePrice - yhat_train_tmp) ^ 2)
+# compute MSE test
+yhat_test_tmp <- predict(fit_fw_tmp, avo_test)
+mse_test_tmp <- mean((avo_test$AveragePrice - yhat_test_tmp) ^ 2)
+
+# if this is the first predictor to be examined,
+# or if this predictors yields a lower MSE that the current
+# best, then store this predictor as the current best predictor
+if (is.na(best_mse_test) | mse_test_tmp < best_mse_test) {
+best_xname <- xname
+best_fit_fw <- fit_fw_tmp
+best_mse_train <- mse_train_tmp
+best_mse_test <- mse_test_tmp
+}
+}
+log_fw <-
+log_fw %>% add_row(
+xname = best_xname,
+model = paste0(deparse(best_fit_fw$call), collapse = ""),
+mse_train = best_mse_train,
+mse_test = best_mse_test
+)
+mse_test
+# adopt the best model for the next iteration
+fit_fw <- best_fit_fw
+# remove the current best predictor from the list of predictors
+xnames <- xnames[xnames!=best_xname]
+}
+
+```
+
+
+
+
+```{r}
+ggplot(log_fw, aes(seq_along(xname), mse_test)) +
+geom_point() +
+geom_line() +
+geom_point(aes(y=mse_train_tmp), color="blue") +
+geom_line(aes(y=mse_train_tmp), color="blue") +
+scale_x_continuous("Variables", labels = log_fw$xname, breaks = seq_along(log_fw$xname)) +
+scale_y_continuous("MSE test") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+
+
+

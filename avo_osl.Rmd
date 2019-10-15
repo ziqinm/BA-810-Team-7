@@ -1,0 +1,334 @@
+---
+title: "avoTemp"
+output: html_document
+---
+```{r}
+options(stringsAsFactors = FALSE)
+
+library(tidyverse)
+library(lubridate)
+library(fastDummies)
+library(ggplot2)
+library(ggthemes)
+library(scales)
+library(glmnet)
+library(zoo)
+
+ds <- read_csv("~/Desktop/avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
+glimpse(ds)
+
+# Switch the order of rows
+ds <- ds %>% 
+  group_by(type, region) %>% 
+  select(X1, year, Date, type, region, everything()) %>% 
+  arrange(Date)
+
+# Change `X1` to `ID`
+colName <- names(ds)
+colName[1] <- "ID"
+names(ds) <- colName
+
+# Assign distinct number id to each observation in `ID` column
+ds$ID <- seq(nrow(ds))
+glimpse(ds)
+
+# Add a `month` column
+ds$month <- month(ds$Date)
+ds <- ds %>% 
+  select(ID, year, month, everything())
+
+# Subset `type` column into `conventional` and `organic`
+dsNew <- dummy_cols(ds, select_columns = "type") %>% 
+  select(ID, year, month, region, type_conventional, type_organic, 
+         everything(), -type)
+
+# Other types
+dsNew$other_PLU <- dsNew$`Total Volume` - dsNew$`4046` - dsNew$`4225` - dsNew$`4770`
+
+dsNew <- dsNew %>% 
+  select(1:3, Date, everything())
+
+# Categorize `region` into US Areas
+uniqueRegion <- unique(dsNew$region)
+uniqueRegion <- as.data.frame(uniqueRegion)
+uniqueRegion$Area <- NA
+uniqueRegion$Area[1] <- "NewEngland"
+uniqueRegion$Area[2] <- "Southeast"
+uniqueRegion$Area[3] <- "Mideast"
+uniqueRegion$Area[4] <- "RockyMountain"
+uniqueRegion$Area[5] <- "NewEngland"
+uniqueRegion$Area[6] <- "Mideast"
+uniqueRegion$Area[7] <- "FarWest"
+uniqueRegion$Area[8] <- "Southeast"
+uniqueRegion$Area[9] <- "GreatLakes"
+uniqueRegion$Area[10] <- "GrateLakes"
+uniqueRegion$Area[11] <- "GrateLakes"
+uniqueRegion$Area[12] <- "Southwest"
+uniqueRegion$Area[13] <- "RockyMountain"
+uniqueRegion$Area[14] <- "GrateLakes"
+uniqueRegion$Area[15] <- "GrateLakes"
+uniqueRegion$Area[16] <- "GrateLakes"
+uniqueRegion$Area[17] <- "Mideast"
+uniqueRegion$Area[18] <- "NewEngland"
+uniqueRegion$Area[19] <- "Southeast"
+uniqueRegion$Area[20] <- "GrateLakes"
+uniqueRegion$Area[21] <- "Southeast"
+uniqueRegion$Area[22] <- "FarWest"
+uniqueRegion$Area[23] <- "FarWest"
+uniqueRegion$Area[24] <- "Southeast"
+uniqueRegion$Area[25] <- "Southeast"
+uniqueRegion$Area[26] <- "Southeast"
+uniqueRegion$Area[27] <- "Southeast"
+uniqueRegion$Area[28] <- "Southeast"
+uniqueRegion$Area[29] <- "Mideast"
+uniqueRegion$Area[30] <- "NewEngland"
+uniqueRegion$Area[31] <- "NewEngland"
+uniqueRegion$Area[32] <- "Southeast"
+uniqueRegion$Area[33] <- "Mideast"
+uniqueRegion$Area[34] <- "Southwest"
+uniqueRegion$Area[35] <- "Mideast"
+uniqueRegion$Area[36] <- "Plains"
+uniqueRegion$Area[37] <- "FarWest"
+uniqueRegion$Area[38] <- "Southeast"
+uniqueRegion$Area[39] <- "Southeast"
+uniqueRegion$Area[40] <- "Southeast"
+uniqueRegion$Area[41] <- "FarWest"
+uniqueRegion$Area[42] <- "FarWest"
+uniqueRegion$Area[43] <- "FarWest"
+uniqueRegion$Area[44] <- "FarWest"
+uniqueRegion$Area[45] <- "Southeast"
+uniqueRegion$Area[46] <- "Southeast"
+uniqueRegion$Area[47] <- "Southeast"
+uniqueRegion$Area[48] <- "FarWest"
+uniqueRegion$Area[49] <- "Plains"
+uniqueRegion$Area[50] <- "Mideast"
+uniqueRegion$Area[51] <- "Southeast"
+uniqueRegion$Area[52] <- "TotalUS"
+uniqueRegion$Area[53] <- "FarWest"
+uniqueRegion$Area[54] <- "Southwest"
+names(uniqueRegion)[1] <- "region"
+
+avo <- dsNew %>% 
+  left_join(uniqueRegion, by = "region") %>% 
+  select(1:5, Area, everything())
+
+View(avo)
+
+avo <- dummy_cols(avo, select_columns = "Area")
+
+View(avo)
+
+##### Formatting Done #####
+
+### Rename Column Names ##3
+avoFormat <- avo
+colnames(avoFormat)
+
+names(avo)[10] <- "TotalVolume"
+names(avo)[14] <- "TotalBags"
+names(avo)[15] <- "SmallBags"
+names(avo)[16] <- "LargeBags"
+names(avo)[17] <- "XLargeBags"
+names(avo)[11] <- "PLU4046"
+names(avo)[12] <- "PLU4225"
+names(avo)[13] <- "PLU4770"
+
+colnames(avo)
+
+### Split the dataset into train and test sets ###
+set.seed(1234)
+avo_train <- avo %>% filter(as.Date(Date) < "2017-03-01")
+avo_train %>%
+  filter(year == 2017, month == 2)
+avo_test <- avo %>% filter(as.Date(Date) >= "2017-03-01")
+avo_test %>%
+  filter(year == 2018, month == 3)
+
+###pre model
+f1 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + TotalVolume + 
+                   PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
+                   + Area_NewEngland + Area_Southeast
+                 + Area_Mideast + Area_RockyMountain
+                 + Area_FarWest + Area_GreatLakes
+                 + Area_GrateLakes + Area_Southwest
+                 + Area_Plains + Area_TotalUS)
+
+x1_train <- model.matrix(f1,avo_train)[,-1]
+x1_test <- model.matrix(f1, avo_test)[,-1]
+y_train <- avo_train$AveragePrice
+y_test <- avo_test$AveragePrice
+x1_avo <- model.matrix(f1, avo)[,-1]
+```
+
+
+
+
+```{r}
+f1 <- as.formula(AveragePrice ~ type_conventional + type_organic + TotalVolume + 
+                   PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
+                   + Area_NewEngland + Area_Southeast
+                 + Area_Mideast + Area_RockyMountain
+                 + Area_FarWest + Area_GreatLakes
+                 + Area_GrateLakes + Area_Southwest
+                 + Area_Plains + Area_TotalUS)
+
+fit.lm <- lm(f1, avo_train)
+fit.lm
+
+y.train <- avo_train$AveragePrice
+y.test <- avo_test$AveragePrice
+yhat.train.lm <- predict(fit.lm)
+mse.train.lm <- mean((y.train - yhat.train.lm)^2)
+yhat.test.lm <- predict(fit.lm, avo_test)
+mse.test.lm <- mean((y.test - yhat.test.lm)^2)
+mse.train.lm
+mse.test.lm
+
+coef(fit.lm)
+plot(fit.lm)
+
+```
+
+```{r}
+library(ISLR)
+names(avo)
+dim(avo)
+sum(is.na(avo$AveragePrice))
+avo=na.omit(avo)
+library(leaps)
+regfit.full=regsubsets(f1,avo_train)
+summary(regfit.full)
+
+regfit.full=regsubsets(f1,data=avo_train ,nvmax=19) 
+reg.summary=summary(regfit.full)
+names(reg.summary)
+```
+
+y.train <- avo_train$AveragePrice
+y.test <- avo_test$AveragePrice
+fit.lm1 <- lm(f1, avo_train)
+yhat.train.lm1 <- predict(fit.lm1)
+mse.train.lm1 <- mean((y.train - yhat.train.lm1)^2)
+yhat.test.lm1 <- predict(fit.lm1, avo_test)
+mse.test.lm1 <- mean((y.test - yhat.test.lm1)^2)
+
+fit_lm<- lm(f,x1_train)
+
+yhat_train_lm <- predict(fit_lm)
+mse_train_lm <- mean((x1_train$AveragePrice - yhat_train_lm)^2)
+yhat_test_lm <- predict(fit_lm, x1_test)
+mse_test_lm <- mean((x1_test$AveragePrice - yhat_test_lm)^2)
+
+
+avo_train$prediction_ltree <- yhat.train.lm1
+avo_test$prediction_ltree <- yhat.test.lm1
+
+avo_plot <- rbind(avo_train, avo_test)
+
+ltree_plot <- avo_plot %>% 
+  group_by(Date) %>% 
+  summarise(meanAvg = mean(AveragePrice),
+            meanAvg_hat = mean(prediction_btree)) %>% 
+  ggplot() +
+  geom_line(aes(Date, meanAvg), col = "navy") + 
+  geom_line(aes(Date, meanAvg_hat), col = "darkseagreen") + 
+  theme_clean()
+
+ltree_plot + 
+  geom_vline(aes(xintercept = as.numeric(Date[113])),
+             linetype = "dashed", size = 1, col = "orange")
+             
+             
+p1<-avo_test %>%
+  select(Date, AveragePrice)
+p2<-cbind(p1, yhat.test.lm1)
+View(p2)
+## Plot
+p2 %>%
+  group_by(Date)%>%
+  summarise(meanpriced = mean(AveragePrice))
+View(p2)
+names(p2)[3] <- "pre"
+p2 %>%
+  group_by(Date) %>%
+  summarise(meanpriced = mean(AveragePrice),meanpre = -mean(pre))%>%
+  ggplot()+
+  geom_point(mapping = aes(x=Date,
+                           y=meanpriced), col = "red")+
+  geom_point(mapping = aes(x=Date, y= meanpre), col = "blue")+
+  geom_vline(xintercept=as.numeric(as.Date("2017-03-01")))
+
+```{r}
+##run ridge
+fit_ridge <- cv.glmnet(x1_train, y_train, alpha = 0, nfolds = 100)
+fit_ridge$lambda
+##Predict response
+yhat_train_ridge <- predict(fit_ridge, x1_train, s = fit_ridge$lambda)
+View(yhat_train_ridge)
+yhat_test_ridge <- predict(fit_ridge, x1_test, s = fit_ridge$lambda)
+View(yhat_test_ridge)
+
+mse_train_ridge = vector()
+mse_test_ridge = vector()
+mse_train_ridge <- mean((y_train - yhat_train_ridge)^2)
+mse_test_ridge <-mean((y_test-yhat_test_ridge)^2)
+for (i in 1:length(fit_ridge$lambda)) {
+  mse_train_ridge[i] <- mean((y_train - yhat_train_ridge)[,i]^2)
+  mse_test_ridge[i] <- mean((y_test - yhat_test_ridge)[,i]^2)
+}
+mse_train_ridge
+mse_test_ridge
+
+lambda_min_mse_train<- fit_ridge$lambda[which.min(mse_train_ridge)]
+lambda_min_mse_test <-fit_ridge$lambda[which.min(mse_test_ridge)]
+lambda_min_mse_train
+lambda_min_mse_test
+
+
+yhat_train_ridge <- predict(fit_ridge, x1_train, s = 0.0261992)
+View(yhat_train_ridge)
+yhat_test_ridge <- predict(fit_ridge, x1_test, s =   0.1160787)
+View(yhat_test_ridge)
+yhat_1<- predict(fit_ridge, x1_avo, s = lambda_min_mse_test)
+## Aggregate data into one dataframe
+p1<-avo %>%
+  select(Date, AveragePrice)
+p2<-cbind(p1, yhat_1)
+View(p2)
+  
+## Plot
+p2 %>%
+  group_by(Date)%>%
+  summarise(meanpriced = mean(AveragePrice))
+View(p2)
+names(p2)[3] <- "pre"
+p2 %>%
+  group_by(Date) %>%
+  summarise(meanpriced = mean(AveragePrice),meanpre = mean(pre))%>%
+  ggplot()+
+  geom_point(mapping = aes(x=Date,
+                           y=meanpriced), col = "red")+
+  geom_point(mapping = aes(x=Date, y= meanpre), col = "blue")+
+  geom_vline(xintercept=as.numeric(as.Date("2017-03-01")))
+
+```
+
+
+
+avo_train$prediction_ltree <- yhat.train.lm
+avo_test$prediction_ltree <- yhat.test.lm
+
+avo_plot <- rbind(avo_train, avo_test)
+
+ltree_plot <- avo_plot %>% 
+  group_by(Date) %>% 
+  summarise(meanAvg = mean(AveragePrice),
+            meanAvg_hat = mean(prediction_ltree)) %>% 
+  ggplot() +
+  geom_line(aes(Date, meanAvg), col = "navy") + 
+  geom_line(aes(Date, meanAvg_hat), col = "darkseagreen") + 
+  theme_clean()
+
+ltree_plot + 
+  geom_vline(aes(xintercept = as.numeric(Date[113])),
+             linetype = "dashed", size = 1, col = "orange")

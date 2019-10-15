@@ -10,7 +10,7 @@ library(fastDummies)
 library(glmnet)
 library(caret)
 library(leaps)
-ds <- read_csv("../Downloads/avocado.csv")
+ds <- read_csv("avocado.csv")
 
 
 # Switch the order of rows
@@ -141,41 +141,76 @@ avo_test <- avo %>% filter(as.Date(Date) >= "2017-03-01")
 avo_test %>%
   filter(year == 2018, month == 3)
 
-## use cross-validation to control 
-set.seed(123)
-train_control <- trainControl(method = "cv", number = 10)
-## train the model
-avo_train1<-avo_train %>% 
-  select(-ID, - year)
-head(avo_tain1)
-step_backward <- train(AveragePrice ~., data = avo_train1,
-                                        method = "leapBackward",
-                                        tuneGrid = data.frame(nvmax = 1: 25),
-                                        trcontrol = train_control
-                                        )
-## the result is wiered 
-step_backward$results
 
-step_backward$bestTune
+## Stepwise backward selection
+regfit.bwd = regsubsets(f1, data = avo_train, nvmax = 19, method = "backward")
+summary(regfit.bwd)
 
-coef(step_backward$finalModel, 25)
+sub_model<-lm(f1, data = avo_train)
+yhat_train_stepwise <- predict(sub_model, avo_train)
+MSE_train_stepwise <- mean((avo_train$AveragePrice - yhat_train_stepwise)^2)
+MSE_train_stepwise
+yhat_test_stepwise <- predict(sub_model, avo_test)
+MSE_test_stepwise <- mean((avo_test$AveragePrice - yhat_test_stepwise)^2)
+MSE_test_stepwise
 
-## try another way
-fitall <- lm(AveragePrice ~ month + Date + region + Area + type_conventional + 
-               type_organic + TotalVolume + PLU4046 + PLU4225 + PLU4770 + 
-               TotalBags + SmallBags + LargeBags + XLargeBags + other_PLU + 
-               Area_NewEngland + Area_Southeast + Area_Mideast + Area_RockyMountain + 
-               Area_FarWest + Area_GreatLakes + Area_GrateLakes + Area_Southwest + 
-               Area_Plains + Area_TotalUS, data = avo_train)
-formula(fitall)
+## based on the coefficients, eliminate "Area_TotalUS", "type_organic".
+f1_1 <- as.formula(AveragePrice ~ month + type_conventional + TotalVolume + 
+                      PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
+                      + Area_NewEngland + Area_Southeast
+                    + Area_Mideast + Area_RockyMountain
+                    + Area_FarWest + Area_GreatLakes
+                    + Area_Southwest
+                    + Area_Plains)
+regfit.bwd1 = regsubsets(f1_1, data = avo_train, nvmax = 19, method = "backward")
+summary(regfit.bwd1)
 
-## run model
-step(fitall, direction = "backward")
+sub_model1<-lm(f1_1, data = avo_train)
+yhat_train_stepwise1 <- predict(sub_model1, avo_train)
+MSE_train_stepwise1 <- mean((avo_train$AveragePrice - yhat_train_stepwise1)^2)
+MSE_train_stepwise1
+yhat_test_stepwise1 <- predict(sub_model1, avo_test)
+MSE_test_stepwise1 <- mean((avo_test$AveragePrice - yhat_test_stepwise1)^2)
+MSE_test_stepwise1
 
-## forward
-fitstart <- lm(AveragePrice ~ 1, data = avo_train)
-summary(fitstart)
+## continue to use backward selection to train the model
+## eliminate "LargeBags"
+f1_2 <- as.formula(AveragePrice ~ month + type_conventional + TotalVolume + 
+                     PLU4046 + PLU4770 + PLU4225 + SmallBags + XLargeBags
+                     + Area_NewEngland +
+                   Area_Mideast + Area_RockyMountain
+                   + Area_FarWest + Area_GreatLakes + Area_Southwest + Area_Plains
+                   )
+regfit.bwd2 = regsubsets(f1_2, data = avo_train, nvmax = 19, method = "backward")
+summary(regfit.bwd2)
 
-## run forward
-step(fitstart, direction = "forward", scope = formula(fitall))
-step(fitstart, direction = "both", scope = formula(fitall))
+sub_model2<-lm(f1_2, data = avo_train)
+yhat_train_stepwise2 <- predict(sub_model2, avo_train)
+MSE_train_stepwise2 <- mean((avo_train$AveragePrice - yhat_train_stepwise2)^2)
+MSE_train_stepwise2
+yhat_test_stepwise2 <- predict(sub_model2, avo_test)
+MSE_test_stepwise2 <- mean((avo_test$AveragePrice - yhat_test_stepwise2)^2)
+MSE_test_stepwise2
+
+## calculate the yhat price for the avo dataset
+yhat_avo_avgprice <- predict(sub_model2, avo)
+library(ggplot2)
+df1_bwd<-avo %>% 
+  select(Date, AveragePrice)
+df2_bwd<-cbind(df1_bwd, yhat_avo_avgprice)
+colnames(df2_bwd)
+names(df2_bwd)[3]<-"AveragePrice_hat"
+## Plot the actual average price and the predictive average price
+plot1_bwd <- df2_bwd %>% 
+  group_by(Date) %>% 
+  summarize(
+    MeanAvg=mean(AveragePrice),
+    MeanAvg_hat=mean(AveragePrice_hat))%>% 
+    ggplot()+
+    geom_line(aes(Date, MeanAvg),color = "blue")+
+    geom_line(aes(Date, MeanAvg_hat), color = "red")+
+    theme_classic()
+
+plot1_bwd + geom_vline(aes(xintercept = as.numeric(Date[113])), 
+                   linetype = "dashed", size = 1,
+                   color = "lightgreen")
