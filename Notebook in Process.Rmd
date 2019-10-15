@@ -242,12 +242,189 @@ y1_test <- avo_test$AveragePrice
 
 * ### Random Forests ###
 
+Building the model first:
+
+```{r}
+fit_rf <- randomForest(f1,
+                       avo_train,
+                       ntree=300,
+                       do.trace=F)
+varImpPlot(fit_rf)
+```
+Predicting our y_hats for train and for test data:
+
+```{r}
+yhat_rf_train <- predict(fit_rf, avo_train)
+yhat_rf_test <- predict(fit_rf, avo_test)
+```
+
+Calculating MSE for both train and test:
+
+```{r}
+mse_rf_train <- mean((yhat_rf_train - y1_train) ^ 2)
+mse_rf_test <- mean((yhat_rf_test - y1_test)^2)
+
+print(mse_rf_train)
+print(mse_rf_test)
+```
+
+Plotting actual prices and predicted prices on one plot:
+Have to prepare data to use it for the plot first by creating a dataframe with Date, AveragePrice and Predicted Price (y_hat) for both train and test:
+
+```{r}
+avo %>% 
+  select(Date, AveragePrice) -> plot_rf_full
+
+yhat_rf_full <- c(yhat_rf_train,yhat_rf_test )
+
+cbind(plot_rf_full, yhat_rf_full) -> plot_rf_full1  
+```
+
+
+
+```{r}
+plot_rf_full1 %>% 
+  group_by(Date) %>% 
+  summarise(mean_y = mean(AveragePrice),
+            mean_yhat = mean(yhat_rf_full)) %>% 
+  ggplot() +
+  geom_line(aes(x = Date, y = mean_y), col = "blue") +
+  geom_line(aes(x = Date, y = mean_yhat), col = "red") -> rf_graph
+ 
+rf_graph + geom_vline(aes(xintercept = as.numeric(Date[113])), 
+                   linetype = "dashed", size = 1,
+                   color = "lightgreen")
+```
+Conclusion for random forest: As we can see on the graph above, with 300 trees, random forest fit train data pretty well, however it is doing bad with test data. Nevertheless, the graph looks better than other less flexible models we have used.
+We could have tried to increase the number of trees to see if it would give better estimations, however, unfortunately, the capacity of RStudios that we have used is not enough to run random forests with more than 300 trees.
+
 
 
 
 * ### Boosting ###
 
 * ### Lasso with a New Variable ###
+
+## Run lasso
+```{r}
+lmodel <- glmnet(x1_train, y1_train, alpha = 1, nlambda = 100)
+lmodel$lambda
+```
+## Predict response
+```{r}
+y1_train_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_train)
+y1_test_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_test)
+length(y1_test_hat)
+mse_train = vector()
+mse_test = vector()
+
+for (i in 1:length(lmodel$lambda)) {
+  mse_train[i] <- mean((y1_train - y1_train_hat)[,i]^2)
+  mse_test[i] <- mean((y1_test - y1_test_hat)[,i]^2)
+}
+mse_train
+mse_test
+
+min(mse_test)
+
+lambda_min_mse_train<- lmodel$lambda[which.min(mse_train)]
+lambda_min_mse_test <-lmodel$lambda[which.min(mse_test)]
+lambda_min_mse_train
+lambda_min_mse_test
+```
+## Using Cross-validation fucntion to find the best lambda
+```{r}
+set.seed(1)
+cv.out = cv.glmnet(x1_train, y1_train, alpha = 1)
+```
+## plot the lambda
+```{r}
+plot(cv.out)
+```
+##check the best lambda
+```{r}
+bestlam = cv.out$lambda.min
+bestlam ## the best lamdba for training dataset is same as lambda_min_mse_train
+```
+## create a new formula for new predictors(eliminate the uncorrelated predictors)
+```{r}
+f3 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + 
+                   PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
+                   Area_NewEngland + Area_Southeast + Area_Mideast + 
+                   Area_RockyMountain + Area_GreatLakes + 
+                   Area_Southwest + Area_Plains)
+x2_train <- model.matrix(f3,avo_train)[,-1]
+x2_test <- model.matrix(f3, avo_test)[,-1]
+```
+## run lasso model again with new predictors
+```{r}
+lmodel2 <- glmnet(x2_train, y1_train, alpha = 1, nlambda = 100)
+```
+## predict response with new predictors
+```{r}
+y2_train_hat <- predict(lmodel2, s = lmodel2$lambda, newx = x2_train)
+y2_test_hat <- predict(lmodel2, s = lmodel2$lambda, newx = x2_test)
+```
+## compute MES again with new predictors
+## the results shows the taining data MSE is increased
+## when eliminate the predictors which don't have correlation 
+## but the test data MSE still keep the same
+```{r}
+mse_train1 = vector()
+mse_test1 = vector()
+
+for (i in 1:length(lmodel2$lambda)) {
+  mse_train1[i] <- mean((y1_train - y2_train_hat)[,i]^2)
+  mse_test1[i] <- mean((y1_test - y2_test_hat)[,i]^2)
+}
+mse_train1
+mse_test1
+
+lambda_min_mse_train1<- lmodel2$lambda[which.min(mse_train1)]
+lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
+lambda_min_mse_train1
+lambda_min_mse_test1
+```
+## check coefficients for f2 and f3 model
+```{r}
+f2coef<-coef(lmodel, s = lambda_min_mse_test)
+f3coef<-coef(lmodel2, s = lambda_min_mse_test1)
+f2coef 
+f3coef
+```
+## Since the second model have the training MSE increased, 
+## The ideal model is still the first "lmodel"
+## we decide to use "lmodel" to run the prediction
+```{r}
+y1_avo_min_lambda_hat <- predict(lmodel, s = lambda_min_mse_test, newx = x1_avo)
+class(y1_avo_min_lambda_hat)
+```
+## Aggregate data into one dataframe for the first model prediction
+```{r}
+library(ggplot2)
+df2<-avo %>% 
+  select(Date, AveragePrice)
+df3<-cbind(df2, y1_avo_min_lambda_hat)
+colnames(df3)
+
+names(df3)[3]<-"AveragePrice_hat"
+```
+## Plot the actual average price and the predictive average price
+```{r}
+head(df3)
+class(df3$Date)
+ df3 %>% 
+  group_by(Date) %>%
+  summarise(meanpriced = mean(AveragePrice),meanpre = mean(AveragePrice_hat))%>%
+  ggplot()+
+  geom_line(mapping = aes(x=Date,
+                           y=meanpriced), col = "#356211")+
+  geom_line(mapping = aes(x=Date, y= meanpre), col = "#cda989")+
+  geom_vline(xintercept=as.numeric(as.Date("2017-03-01")), col = "#AA471F", linetype = "dashed")+
+   theme_classic()
+```
+We can see from this graph, that compare with the regular lasso that we did before, this graph did a much better prediction with our dataset. It not only showed a season based change for avocado price but also have some sort of change within one year period. 
+However, Although this model have the lowest Test MSE, we can see that the prediction is not as good as some model that we have before. So it require us to work further on this time series dataset to get more accurate prediction. 
 
 ----------
 
