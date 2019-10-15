@@ -8,7 +8,7 @@ library(ggthemes)
 library(gbm)
 
 ds <- read_csv("avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
-glimpse(ds)
+# glimpse(ds)
 
 # Switch the order of rows
 ds <- ds %>% 
@@ -23,7 +23,7 @@ names(ds) <- colName
 
 # Assign distinct number id to each observation in `ID` column
 ds$ID <- seq(nrow(ds))
-glimpse(ds)
+# glimpse(ds)
 
 # Add a `month` column
 ds$month <- month(ds$Date)
@@ -105,18 +105,17 @@ avo <- dsNew %>%
   left_join(uniqueRegion, by = "region") %>% 
   select(1:5, Area, everything())
 
-View(avo)
+# View(avo)
 
 avo <- dummy_cols(avo, select_columns = "Area")
 
-View(avo)
+# View(avo)
 
 ##### Formatting Done #####
 
 
 ### Rename Column Names ##3
-avoFormat <- avo
-colnames(avoFormat)
+colnames(avo)
 
 names(avo)[10] <- "TotalVolume"
 names(avo)[14] <- "TotalBags"
