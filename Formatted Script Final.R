@@ -7,7 +7,7 @@ library(ggplot2)
 library(ggthemes)
 library(gbm)
 
-ds <- read_csv("desktop/avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
+ds <- read_csv("avocado.csv")  # LOAD THE ORIGINAL KAGGLE AVOCADO FILE
 glimpse(ds)
 
 # Switch the order of rows
