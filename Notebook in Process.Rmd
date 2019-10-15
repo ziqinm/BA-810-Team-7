@@ -59,4 +59,8 @@ output: html_notebook
 
 ----------
 
-## Conclusion ##
+## Conclusions ##
+
+* ### Influential Predictors ###
+
+* ### Reflections ###

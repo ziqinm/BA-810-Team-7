@@ -8,7 +8,6 @@ fit.tree <- rpart(f1,
 par(xpd = TRUE)
 plot(fit.tree, compress=TRUE)
 text(fit.tree, use.n=TRUE)
-
 rpart.plot(fit.tree, type = 1)
 
 yhat.train.tree <- predict(fit.tree, avo_train)
@@ -20,3 +19,4 @@ yhat.test.tree <- predict(fit.tree, avo_test)
 mse.test.tree <- mean((avo_test$AveragePrice - yhat.test.tree)^2)
 mse.test.tree
 # 0.1468156
+

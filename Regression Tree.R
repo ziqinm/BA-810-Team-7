@@ -12,7 +12,5 @@ prune.avo =prune.tree(tree.avo,best =5)
 plot(prune.avo)
 text(prune.avo,pretty =0)
 
-yhat = predict(tree.avo ,newdata = avo_test)
-plot(yhat, avo_test$AveragePrice)
-abline (0,1)
-mean((yhat - avo_test$AveragePrice)^2)
+mse_regreTree_test <- mean((yhat - avo_test$AveragePrice)^2)
+mse_regreTree_test

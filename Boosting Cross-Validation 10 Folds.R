@@ -27,12 +27,13 @@ btree_plot <- avo_plot %>%
   summarise(meanAvg = mean(AveragePrice),
             meanAvg_hat = mean(prediction_btree)) %>% 
   ggplot() +
-  geom_line(aes(Date, meanAvg), col = "navy") + 
-  geom_line(aes(Date, meanAvg_hat), col = "darkseagreen") + 
+  geom_line(aes(Date, meanAvg), col = "darkseagreen") + 
+  geom_line(aes(Date, meanAvg_hat), col = "#F2E880") + 
   labs(title = "Boosting with k = 10",
-       subtitle = "ntree = 150, depth= 4, shrinkage = 0.1") +
+       subtitle = "ntree = 150, depth= 4, shrinkage = 0.1",
+       y = "Mean average price") +
   theme_clean()
 
 btree_plot + 
   geom_vline(aes(xintercept = as.numeric(Date[113])),
-             linetype = "dashed", size = 1, col = "orange")
+             linetype = "dashed", size = 1, col = "#666666")
