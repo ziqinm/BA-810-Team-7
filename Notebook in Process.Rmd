@@ -9,27 +9,53 @@ output: html_notebook
 
 ## Introduction ##
 
-### Dataset Debrief ###
+* ### Business Setting ###
 
-### Business Setting ###
+(who cares and why)
 
-### Business Problem ###
+* ### Business Problem ###
 
 --------------
 
-## Descriptive Analysis ##
+## Dataset Debrief ##
+
+* ### Source ###
+
+* ### Descriptive Analysis ###
 
 ----------
 
 ## Modeling ##
 
+* ### Linear Regression ###
+
+* ### Forward Selection ###
+
+* ### Backward Selection ###
+
+* ### Ridge Regression ###
+
+* ### Lasso Regression ###
+
+* ### Decision Tree ###
+
+* ### Regression Tree ###
+
+* ### Bagging ###
+
+* ### Random Forests ###
+
+* ### Boosting ###
+
+* ### Lasso with a New Variable ###
+
 ----------
 
 ## Result ##
 
-### Which is best ###
+* ### Which is best ###
 
-### Challenges ###
+* ### Challenges ###
 
 ----------
 
