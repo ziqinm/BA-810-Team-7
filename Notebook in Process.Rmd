@@ -684,6 +684,7 @@ Ridge is more flexibly than lasso, maybe each variable have something to do in o
 
 * ### Decision Tree ###
 
+We use `rpart` function to build decision trees. 
 ```{r}
 fit.tree <- rpart(f1,
                   avo_train,
@@ -706,9 +707,11 @@ yhat.test.tree <- predict(fit.tree, avo_test)
 mse.test.tree <- mean((avo_test$AveragePrice - yhat.test.tree)^2)
 mse.test.tree
 ```
+The outcome is too difficult to read, even after we adjust the type. The test MSE is 0.1468156, which is greater than Lasso. Decision trees make little sense in predicting prices, and we trained this one just for practice.
 
 * ### Regression Tree ###
 
+We use `tree` function to create regression trees.
 ```{r}
 tree.avo =tree(f1, avo_train)
 summary(tree.avo)
@@ -728,10 +731,11 @@ yhat <- predict(tree.avo, newdata = avo_test)
 mse_regreTree_test <- mean((yhat - avo_test$AveragePrice)^2)
 mse_regreTree_test
 ```
-
+The terminal nodes show the price per avocado in each branch, and the test MSE is 0.1499934, even greater than Decision Tree.
 
 * ### Bagging ###
 
+We use `randomForest` function to build bagging trees by setting `mtry` to the number of predictors in our base function f1. 
 ```{r}
 set.seed (1)
 bag.avo =randomForest(f1, data = avo_train, 
@@ -739,6 +743,7 @@ bag.avo =randomForest(f1, data = avo_train,
 bag.avo
 ```
 
+Then we create a scatter plot of test prediction and test actual prices, and add a trend line in 45 degrees. 
 ```{r}
 yhat.bag = predict (bag.avo, newdata = avo_test)
 plot(yhat.bag, avo_test$AveragePrice, main = "Scatter Plot for Bagging",
@@ -749,7 +754,7 @@ abline (0,1)
 mse_bag_test <- mean((yhat.bag - avo_test$AveragePrice)^2)
 mse_bag_test
 ```
-
+As we can see from this graph, the scatters are clustered above the trendline. Ideally, the scatters should lie on top of the trend line. The test MSE is 0.1350875, and this should be treated as the bottomline for other tree models. 
 
 * ### Random Forests ###
 
@@ -808,7 +813,8 @@ rf_graph + geom_vline(aes(xintercept = as.numeric(Date[113])),
   labs(title = "Random Forest",
        y = "Mean Price")
 ```
-Conclusion for random forest: As we can see on the graph above, with 300 trees, random forest fit train data pretty well, however it is doing bad with test data. Nevertheless, the graph looks better than other less flexible models we have used.
+As we can see on the graph above, with 300 trees, random forest fit train data pretty well, however it is doing bad with test data. Nevertheless, the graph looks better than other less flexible models we have used.
+
 We could have tried to increase the number of trees to see if it would give better estimations, however, unfortunately, the capacity of RStudios that we have used is not enough to run random forests with more than 300 trees.
 
 
@@ -816,6 +822,7 @@ We could have tried to increase the number of trees to see if it would give bett
 
 * ### Boosting ###
 
+We use the `gbm` function to run boosting trees. We set the number of trees to be 150, which is half of the trees in Random Forest. The `interaction.depth` is set to 4 and `shrinkage` is 0.1. We add a commend in this function, `cv.folds`, to apply KNN cross-validation in traing, and we split the training set into 10 folds.
 ```{r}
 boostingcv <- gbm(f1,
                   data = avo_train,
@@ -830,6 +837,8 @@ yhat_btree <- predict(boostingcv, avo_train, n.trees = 150)
 mse_btree <- mean((yhat_btree - y1_train) ^ 2)
 print(mse_btree)
 ```
+Here we get the train MSE for boosting. Then we calculate the test MSE.
+
 
 ```{r}
 yhat_btree_test <- predict(boostingcv, avo_test, n.trees = 150)
@@ -837,6 +846,7 @@ mse_btree_test <- mean((yhat_btree_test - y1_test) ^ 2)
 print(mse_btree_test)
 ```
 
+Next, we add the boosting predictions into train and test sets to plot the trend for predictions and actuals.
 ```{r}
 avo_train$prediction_btree <- yhat_btree
 avo_test$prediction_btree <- yhat_btree_test
@@ -860,7 +870,7 @@ btree_plot +
   geom_vline(aes(xintercept = as.numeric(Date[113])),
              linetype = "dashed", size = 1, col = "#AA471F")
 ```
-
+The boosting model gives a good illustration in seasonality, though the tset MSE is a little bit higher then Random Forest. At the end of this step, we prefer Random Forest as our choice of model
 
 * ### Lasso with a New Variable ###
 ```{r}
@@ -1296,3 +1306,4 @@ We gained a lot of insights in coding with R to train our models, converting the
 ----------
 
 ### References ###
+- 
