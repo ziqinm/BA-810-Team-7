@@ -559,7 +559,8 @@ The ridge model is pretty much the same with lasso model, so we will see the dif
 
 
 * ### Lasso Regression ###
-## Run lasso
+
+Run lasso
 lmodel <- glmnet(x1_train, y1_train, alpha = 1, nlambda = 100)
 lmodel$lambda
 
