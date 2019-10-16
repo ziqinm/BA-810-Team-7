@@ -452,7 +452,7 @@ p1<-avo %>%
 p2<-cbind(p1, yhat_1)
 ```
 
-## Plot
+Plot
 ```{R}
 p2 %>%
   group_by(Date)%>%
@@ -474,11 +474,15 @@ The ridge model is pretty much the same with lasso model, so we will see the dif
 
 
 * ### Lasso Regression ###
-## Run lasso
+
+Run lasso
+```{R}
 lmodel <- glmnet(x1_train, y1_train, alpha = 1, nlambda = 100)
 lmodel$lambda
+```
 
-## Predict response
+Predict response
+```{R}
 y1_train_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_train)
 y1_test_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_test)
 length(y1_test_hat)
@@ -496,8 +500,10 @@ lambda_min_mse_train<- lmodel$lambda[which.min(mse_train)]
 lambda_min_mse_test <-lmodel$lambda[which.min(mse_test)]
 lambda_min_mse_train
 lambda_min_mse_test
+```
 
-## Using Cross-validation fucntion to find the best lambda
+Using Cross-validation fucntion to find the best lambda
+```{R}
 set.seed(1)
 cv.out = cv.glmnet(x1_train, y1_train, alpha = 1)
 ## plot the lambda
@@ -505,8 +511,10 @@ plot(cv.out)
 ##check the best lambda
 bestlam = cv.out$lambda.min
 bestlam ## the best lamdba for training dataset is same as lambda_min_mse_train
+```
 
-## create a new formula for new predictors(eliminate the uncorrelated predictors)
+create a new formula for new predictors(eliminate the uncorrelated predictors)
+```{R}
 f2 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + 
                    PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
                    Area_NewEngland + Area_Southeast + Area_Mideast + 
@@ -535,6 +543,7 @@ for (i in 1:length(lmodel2$lambda)) {
 }
 mse_train1
 mse_test1
+min(mse_test1)
 
 lambda_min_mse_train1<- lmodel2$lambda[which.min(mse_train1)]
 lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
@@ -553,7 +562,6 @@ f2coef
 y1_avo_min_lambda_hat <- predict(lmodel, s = lambda_min_mse_test, newx = x1_avo)
 class(y1_avo_min_lambda_hat)
 ## Aggregate data into one dataframe for the first model prediction
-library(ggplot2)
 df1<-avo %>% 
   select(Date, AveragePrice)
 df2<-cbind(df1, y1_avo_min_lambda_hat)
@@ -577,10 +585,8 @@ plot1 <- df2 %>%
 plot1 + geom_vline(aes(xintercept = as.numeric(Date[113])), 
                    linetype = "dashed", size = 1,
                    color = "lightgreen")
-
-##We can see that our ridge model actually did a better job than lasso. 
-##Ridge is more flexibly than lasso, maybe each variable have something 
-##to do in our data set, so ridge works better than lasso. 
+```
+We can see that our ridge model actually did a better job than lasso. Ridge is more flexibly than lasso, maybe each variable have something to do in our data set, so ridge works better than lasso. 
 
 
 * ### Decision Tree ###
