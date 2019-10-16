@@ -481,13 +481,13 @@ plot1_bwd <- df2_bwd %>%
     MeanAvg=mean(AveragePrice),
     MeanAvg_hat=mean(AveragePrice_hat))%>% 
     ggplot()+
-    geom_line(aes(Date, MeanAvg),color = "blue")+
-    geom_line(aes(Date, MeanAvg_hat), color = "red")+
+    geom_line(aes(Date, MeanAvg),color = "#356211")+
+    geom_line(aes(Date, MeanAvg_hat), color = "#cda989")+
     theme_classic()
 
 plot1_bwd + geom_vline(aes(xintercept = as.numeric(Date[113])), 
                    linetype = "dashed", size = 1,
-                   color = "lightgreen")
+                   color = "#AA471F")
 ```
 
 * ### Ridge Regression ###
@@ -674,13 +674,13 @@ plot1 <- df2 %>%
     MeanAvg=mean(AveragePrice),
     MeanAvg_hat=mean(AveragePrice_hat)) %>%
   ggplot()+
-  geom_line(aes(Date, MeanAvg),color = "blue")+
-  geom_line(aes(Date, MeanAvg_hat), color = "red")+
+  geom_line(aes(Date, MeanAvg),color = "#356211")+
+  geom_line(aes(Date, MeanAvg_hat), color = "#cda989")+
   theme_classic()
 
 plot1 + geom_vline(aes(xintercept = as.numeric(Date[113])), 
                    linetype = "dashed", size = 1,
-                   color = "lightgreen")
+                   color = "#AA471F")
 ```
 We can see that our ridge model actually did a better job than lasso. 
 Ridge is more flexibly than lasso, maybe each variable have something to do in our data set, so ridge works better than lasso. 
