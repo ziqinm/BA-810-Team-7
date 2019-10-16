@@ -1165,7 +1165,7 @@ Running a loop to predict each day using previous day prediction:
 f_ts <- as.formula(AveragePrice ~ lag1_y + month + type_conventional + type_organic + 
                            PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
                            Area_NewEngland + Area_Southeast + Area_Mideast + 
-                           Area_RockyMountain + Area_GrateLakes + 
+                           Area_RockyMountain + Area_GreatLakes + 
                            Area_Southwest + Area_Plains)
 
 
