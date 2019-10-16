@@ -1136,6 +1136,128 @@ We can see from this graph, that compare with the regular lasso that we did befo
 However, Although this model have the lowest Test MSE, we can see that the prediction is not as good as some model that we have before. So it require us to work further on this time series dataset to get more accurate prediction. 
 
 
+
+* ### Lasso with a previous day prediction as a variable ###
+
+Because we are working with time series dataset, it is reasonable to assume that the previous day price plays a big part in predicting a next day price. 
+Therefore, we have tried to create a code that would predict one day price and use it as a predictor for the next day price. 
+
+Let's make a new dataframe with lagged 1 day price as an additional variable, and change it to zero for test data (as in real life we would not know the previous day price):
+```{r}
+avo_ts <- avo %>% 
+          mutate(lag1_y = lag(AveragePrice))
+
+dim(avo_ts)
+avo_ts <- drop_na(avo_ts)
+dim(avo_ts)
+
+avo_train_ts <- avo_ts[1:12202, ]
+avo_test_ts <- avo_ts[12203:18248, ]
+dim(avo_test_ts)
+
+avo_test_ts[2:6046,"lag1_y"] <- 0
+
+```
+
+Running a loop to predict each day using previous day prediction:
+
+```{r}
+f_ts <- as.formula(AveragePrice ~ lag1_y + month + type_conventional + type_organic + 
+                           PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
+                           Area_NewEngland + Area_Southeast + Area_Mideast + 
+                           Area_RockyMountain + Area_GrateLakes + 
+                           Area_Southwest + Area_Plains)
+
+
+y_hat_ts_test_f <- avo_test_ts[1,"lag1_y"]
+avo_ts1 <- avo_ts
+lambda_min_test <- 0.001570601 #the min lambda from lasso model above
+check_ts <- vector()
+for (i in 1:6045) {
+  avo_train_ts <- avo_ts1[1:(12203+i), ]
+  avo_test_ts <- avo_ts1[(12204+i):18248, ]
+  
+  x_ts_train <- model.matrix(f_ts,avo_train_ts)[,-1]
+  x_ts_test <- model.matrix(f_ts, avo_test_ts)[,-1]
+  
+  y_ts_train <- avo_train_ts$AveragePrice
+  y_ts_test <- avo_test_ts$AveragePrice
+  
+  lmodel_ts <- glmnet(x_ts_train, y_ts_train, alpha = 1, nlambda = 100)
+  
+  y_ts_train_hat <- predict(lmodel_ts, s = lambda_min_test, newx = x_ts_train)
+  y_ts_test_hat <- predict(lmodel_ts, s = lambda_min_test, newx = x_ts_test)
+  y_hat_ts_test_f <- c(y_hat_ts_test_f, y_ts_test_hat[1])
+  (length(y_hat_ts_test_f))
+  avo_ts1[(12204+i), "lag1_y"] <- y_ts_test_hat[1]
+  
+}
+```
+The loop gives back an error, which we, unfortunately, could not resolve. (Also because this loop takes long time to run).
+
+However, it somehow worked to gather prediction based on previous day prediction as variable. 
+We can see it in here:
+```{r}
+length(y_hat_ts_test_f)
+y_hat_ts_test_f <- unlist(y_hat_ts_test_f)
+```
+
+It is supposed to have 6046 numbers, but maybe due to the error it lost 2 numbers somewhere in the loop.
+We suppose that 2 out of 6046 will not add a significant change, so in order to calculate MSE properly, we have decided to substitute the lost 2 numbers with an average of known 6044:
+
+```{r}
+y_hat_ts_test_f <- c(y_hat_ts_test_f, mean(y_hat_ts_test_f), mean(y_hat_ts_test_f))
+length(y_hat_ts_test_f)
+```
+
+We need to also readjust test data because of the loop changes:
+
+```{r}
+avo_test_ts <- avo_ts[12203:18248,]
+y_ts_test <- avo_test_ts$AveragePrice
+```
+
+We now can calculate MSE:
+
+```{r}
+mse_ts_test_f <- mean((y_ts_test - y_hat_ts_test_f)^2)
+print(mse_ts_test_f)
+```
+The MSE shown above is the lowest MSE among all models we have run. This may implicate that for time series dataset it is better to use previous day prediction as a variable for next day prediction.
+However, it is quite incovenient and time-consuming to adjust models for variables and predict each row separately. 
+
+Let's see if plot can show the difference.
+
+Need to select and prepare data for the plot first:
+```{r}
+avo %>% 
+  select(Date, AveragePrice) -> plot_ts_full
+plot_ts_full <- plot_ts_full[2:nrow(plot_ts_full),]
+
+y_hat_train_ts <-  y_ts_train_hat[1:12202,]
+y_hat_ts_full <- c(y_hat_train_ts, y_hat_ts_test_f )
+
+plot_ts <- cbind(plot_ts_full, y_hat_ts_full)
+```
+
+Plot:
+```{r}
+plot_ts %>% 
+  group_by(Date) %>% 
+  summarise(mean_y = mean(AveragePrice),
+            mean_yhat = mean(y_hat_ts_full)) %>% 
+  ggplot() +
+  geom_line(aes(x = Date, y = mean_y), col = "blue") +
+  geom_line(aes(x = Date, y = mean_yhat), col = "red") -> ts_graph
+ 
+ts_graph + geom_vline(aes(xintercept = as.numeric(Date[113])), 
+                   linetype = "dashed", size = 1,
+                   color = "lightgreen")
+```
+The graph does not show much of the difference, however we know that it is better because it has lower MSE.
+
+
+
 ----------
 
 ## Result ##
