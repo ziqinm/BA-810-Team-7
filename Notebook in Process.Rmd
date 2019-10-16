@@ -407,11 +407,12 @@ plot1_fw + geom_vline(aes(xintercept = as.numeric(Date[113])),
 
 
 * ### Backward Selection ###
+Using `f1` formula to match average price with all predictors in order to see the best model which contains a giving number of predictors. 
 ```{r}
 regfit.bwd = regsubsets(f1, data = avo_train, nvmax = 19, method = "backward")
 summary(regfit.bwd)
 ```
-
+Calculate the yhat and MSE for train and test dataset, the test MSE is way to large for the model including all the predictors.
 ```{r}
 sub_model<-lm(f1, data = avo_train)
 yhat_train_stepwise <- predict(sub_model, avo_train)
@@ -422,7 +423,7 @@ MSE_test_stepwise <- mean((avo_test$AveragePrice - yhat_test_stepwise)^2)
 MSE_test_stepwise
 
 ```
-Based on the coefficients, eliminate "Area_TotalUS", "type_organic".
+Based on the result of summary, the best fit model contains everything except  "Area_TotalUS", "type_organic". So we excluded these two predictors to create a new formula to train the model. 
 ```{r}
 f1_1 <- as.formula(AveragePrice ~ month + type_conventional + TotalVolume + 
                       PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
@@ -442,8 +443,7 @@ yhat_test_stepwise1 <- predict(sub_model1, avo_test)
 MSE_test_stepwise1 <- mean((avo_test$AveragePrice - yhat_test_stepwise1)^2)
 MSE_test_stepwise1
 ```
-Continue to use backward selection to train the model
-Eliminate "LargeBags"
+However, the test MSE is still way to large, therefore, we decide to remove the predictor one by one based on the result of summary. We try to remove "Area_Plains", "Area_FarWest", "LargeBags" one by one, we found that removing "LargeBags" can significantly reduce the test MSE to 0.1397455 which is the lowest MSE that we have tried. So the best fit model is `f1_2`.
 ```{r}
 f1_2 <- as.formula(AveragePrice ~ month + type_conventional + TotalVolume + 
                      PLU4046 + PLU4770 + PLU4225 + SmallBags + XLargeBags
@@ -462,7 +462,8 @@ yhat_test_stepwise2 <- predict(sub_model2, avo_test)
 MSE_test_stepwise2 <- mean((avo_test$AveragePrice - yhat_test_stepwise2)^2)
 MSE_test_stepwise2
 ```
-Calculate the yhat price for the avo dataset and merge the date frame
+
+Calculate the yhat price for the `avo` dataset which contain train and test dataset and merge them to the a single date frame.
 ```{r}
 yhat_avo_avgprice <- predict(sub_model2, avo)
 df1_bwd<-avo %>% 
@@ -472,7 +473,7 @@ colnames(df2_bwd)
 names(df2_bwd)[3]<-"AveragePrice_hat"
 ```
 
-Plot the actual average price and the predictive average price
+Plot the actual average price and the predictive average price, the prediction for Backward selection is very similar with ridge and lasso based on the graph which will show as following. 
 ```{r}
 plot1_bwd <- df2_bwd %>% 
   group_by(Date) %>% 
