@@ -568,7 +568,7 @@ Predict response shows the minimue mse for the train(0.06472616) and test(0.1390
 ```{r}
 y1_train_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_train)
 y1_test_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_test)
-length(y1_test_hat)
+
 mse_train = vector()
 mse_test = vector()
 
@@ -576,8 +576,7 @@ for (i in 1:length(lmodel$lambda)) {
   mse_train[i] <- mean((y1_train - y1_train_hat)[,i]^2)
   mse_test[i] <- mean((y1_test - y1_test_hat)[,i]^2)
 }
-mse_train
-mse_test
+
 min(mse_train)
 min(mse_test)
 ```
@@ -588,7 +587,7 @@ lambda_min_mse_test <-lmodel$lambda[which.min(mse_test)]
 lambda_min_mse_train
 lambda_min_mse_test
 ```
-Using Cross-validation fucntion to find the best lambda
+Using Cross-validation fucntion to find the best lambda, the result shows the best lambda for train dataset is same as above. 
 ```{r}
 set.seed(1)
 cv.out = cv.glmnet(x1_train, y1_train, alpha = 1)
@@ -632,8 +631,7 @@ for (i in 1:length(lmodel2$lambda)) {
   mse_train1[i] <- mean((y1_train - y2_train_hat)[,i]^2)
   mse_test1[i] <- mean((y1_test - y2_test_hat)[,i]^2)
 }
-mse_train1
-mse_test1
+
 min(mse_train1)
 min(mse_test1)
 ```
