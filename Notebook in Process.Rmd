@@ -37,6 +37,8 @@ library(ggplot2)
 library(ggthemes)
 library(fastDummies)
 library(glmnet)
+library(rpart)
+library(rpart.plot)
 library(randomForest)
 library(gbm)
 
@@ -235,7 +237,6 @@ fit_ridge$lambda
 Predict response
 ```{R}
 yhat_train_ridge <- predict(fit_ridge, x1_train, s = fit_ridge$lambda)
-View(yhat_train_ridge)
 yhat_test_ridge <- predict(fit_ridge, x1_test, s = fit_ridge$lambda)
 
 mse_train_ridge = vector()
@@ -249,6 +250,7 @@ for (i in 1:length(fit_ridge$lambda)) {
 mse_train_ridge
 mse_test_ridge
 min(mse_test_ridge)
+# 0.1366643
 ```
 
 ```{R}
@@ -292,6 +294,31 @@ p2 %>%
 * ### Lasso Regression ###
 
 * ### Decision Tree ###
+
+```{r}
+fit.tree <- rpart(f1,
+                  avo_train,
+                  control = rpart.control(cp = 0.001))
+
+par(xpd = TRUE)
+plot(fit.tree, compress=TRUE)
+text(fit.tree, use.n=TRUE)
+rpart.plot(fit.tree, type = 1)
+```
+
+```{r}
+yhat.train.tree <- predict(fit.tree, avo_train)
+mse.train.tree <- mean((avo_train$AveragePrice - yhat.train.tree)^2)
+mse.train.tree
+# 0.03397259
+```
+
+```{r}
+yhat.test.tree <- predict(fit.tree, avo_test)
+mse.test.tree <- mean((avo_test$AveragePrice - yhat.test.tree)^2)
+mse.test.tree
+# 0.1468156
+```
 
 * ### Regression Tree ###
 
