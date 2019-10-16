@@ -5,9 +5,29 @@ date: October 16, 2019
 output: html_notebook
 ---
 
-## Notebook Setting ##
+----------
 
-Load the required packages.
+## Introduction ##
+
+* ### Business Setting ###
+
+(who cares and why)
+
+* ### Business Problem ###
+
+--------------
+
+## Dataset Debrief ##
+
+* ### Data Source ###
+
+* ### Descriptive Analysis ###
+
+----------
+
+## Data Preparation ##
+
+Before looking at the dataset, we first load the packages that will be used.
 ```{r}
 options(stringsAsFactors = FALSE)
 
@@ -29,70 +49,15 @@ library(gbm)
 
 # Set the ggtheme beforehead for all plots
 theme_set(theme_clean())
+
 ```
 
-----------
-
-## Introduction ##
-
-This notebook is created by Cohort A Team 7 for the BA 810 team project. The content includes our business setting to a existing dataset and our attempts in machine learning model training.
-
-### Business Problem ###
-
-Our team is planning to open a store called "Everything Avocado", basically selling avocado food products including avocado toasts, tortilla chips with guacamole, and avocado smoothies. During opening preparation, we want to set a budget in buying raw avocados as inventories, so we would like to learn the future price for avocados.
-
-Fortunately, all of the team members are taking a machine learning course together, then we decided to develope a model to **predict avocado prices** using existing data source.
-
-### Audience of our model ###
-
-We expect that our optimal model could be applied to other raw product retails, especially in fresh products (fruits and vegetables). Ideally, the price any products of this type could be predicted, if the prices are influenced by similar predictors. In a business setting, whoever wants to get a sense of future product price (retailers, customers, market analysts, etc.) will hold a huge interest in our model.
-
---------------
-
-## Dataset Debrief ##
-
-* ### Data Source ###
-
-The dataset we keep using is the `Avocado Price` dataset from [Kaggle](https://www.kaggle.com/neuromusic/avocado-prices). It is the record of historical data on avocado prices and sales volume in multiple US markets. 
-
+Then we load the original kaggle dataset and print a quick view of columns and data types.
 ```{r}
 ds <- read_csv("avocado.csv")  
 glimpse(ds)
 ```
-Here is a quick view of columns and data types. There are 14 columns in this dataset, and we will use `AveragePrice` as our prediction. `X1` gives a id for each observation, and we want to transfer that into row numbers for each row by adding 1. Most of the data types are `<dbl>`, and there are only 2 columns with character vectors, `type` and `region`. We will transfer them to dummy variables to train our models. The time span is from Janurary 4, 2015 to March 25, 2018. 
-
-* ### Descriptive Analysis ###
-
-Before going into the modeling, we made a plot for the average price of avocados grouped by date, and we observed that average price usually increases during the second half of the year.
-```{r}
-ds %>% 
-group_by(Date) %>%
-  summarise(meanpriced = mean(AveragePrice)) %>%
-  ggplot(aes(x = Date, y = meanpriced)) +
-  geom_point(col = "#4a7337") +
-  geom_smooth(col = "#d9cd65", se = FALSE) + 
-  labs(y = "Average price",
-       title = "Average price by date") + 
-  theme_bw()
-```
-
-We also map the average quantity (Volume) by dates. We noticed that in the beginning of each year, there is one day when the volume sold is extremely high. We then checked the calendar and happened to find that these days were all Super Bowl game days!
-```{r}
-ds %>%
-  group_by(Date) %>%
-  summarise(totalvold = sum(`Total Volume`)) %>%
-  ggplot(aes(x = Date, y = totalvold)) +
-  geom_point(col = "#4a7337") +
-  geom_smooth(col = "#d9cd65", se = FALSE) + 
-  labs(y = "Total volumn sold",
-       title = "Total volumn sold by date") + 
-  theme_bw() 
-```
-
-
-----------
-
-## Data Preparation ##
+There are 14 columns in this dataset, and we will use `AveragePrice` as our prediction. `X1` gives a id for each observation, and we want to transfer that into row numbers for each row by adding 1. Most of the data types are `<dbl>`, and there are only 2 columns with character vectors, `type` and `region`. We will transfer them to dummy variables to train our models.
 
 In the following code chunk, we took multiple steps to arrange the columns.
 ```{r}
@@ -559,9 +524,7 @@ lambda_min_mse_test_ridge <-fit_ridge$lambda[which.min(mse_test_ridge)]
 lambda_min_mse_train_ridge
 lambda_min_mse_test_ridge
 
-yhat_train_ridge <- predict(fit_ridge, x1_train, s = 0.0261992)
-yhat_test_ridge <- predict(fit_ridge, x1_test, s =   0.1160787)
-yhat_1<- predict(fit_ridge, x1_avo, s = lambda_min_mse_test)
+yhat_1<- predict(fit_ridge, x1_avo, s = lambda_min_mse_test_ridge)
 ```
 
 Aggregate data into one dataframe
@@ -719,7 +682,6 @@ Ridge is more flexibly than lasso, maybe each variable have something to do in o
 
 * ### Decision Tree ###
 
-We use `rpart` function to build decision trees. 
 ```{r}
 fit.tree <- rpart(f1,
                   avo_train,
@@ -742,11 +704,9 @@ yhat.test.tree <- predict(fit.tree, avo_test)
 mse.test.tree <- mean((avo_test$AveragePrice - yhat.test.tree)^2)
 mse.test.tree
 ```
-The outcome is too difficult to read, even after we adjust the type. The test MSE is 0.1468156, which is greater than Lasso. Decision trees make little sense in predicting prices, and we trained this one just for practice.
 
 * ### Regression Tree ###
 
-We use `tree` function to create regression trees.
 ```{r}
 tree.avo =tree(f1, avo_train)
 summary(tree.avo)
@@ -766,11 +726,10 @@ yhat <- predict(tree.avo, newdata = avo_test)
 mse_regreTree_test <- mean((yhat - avo_test$AveragePrice)^2)
 mse_regreTree_test
 ```
-The terminal nodes show the price per avocado in each branch, and the test MSE is 0.1499934, even greater than Decision Tree.
+
 
 * ### Bagging ###
 
-We use `randomForest` function to build bagging trees by setting `mtry` to the number of predictors in our base function f1. 
 ```{r}
 set.seed (1)
 bag.avo =randomForest(f1, data = avo_train, 
@@ -778,7 +737,6 @@ bag.avo =randomForest(f1, data = avo_train,
 bag.avo
 ```
 
-Then we create a scatter plot of test prediction and test actual prices, and add a trend line in 45 degrees. 
 ```{r}
 yhat.bag = predict (bag.avo, newdata = avo_test)
 plot(yhat.bag, avo_test$AveragePrice, main = "Scatter Plot for Bagging",
@@ -789,7 +747,7 @@ abline (0,1)
 mse_bag_test <- mean((yhat.bag - avo_test$AveragePrice)^2)
 mse_bag_test
 ```
-As we can see from this graph, the scatters are clustered above the trendline. Ideally, the scatters should lie on top of the trend line. The test MSE is 0.1350875, and this should be treated as the bottomline for other tree models. 
+
 
 * ### Random Forests ###
 
@@ -848,8 +806,7 @@ rf_graph + geom_vline(aes(xintercept = as.numeric(Date[113])),
   labs(title = "Random Forest",
        y = "Mean Price")
 ```
-As we can see on the graph above, with 300 trees, random forest fit train data pretty well, however it is doing bad with test data. Nevertheless, the graph looks better than other less flexible models we have used.
-
+Conclusion for random forest: As we can see on the graph above, with 300 trees, random forest fit train data pretty well, however it is doing bad with test data. Nevertheless, the graph looks better than other less flexible models we have used.
 We could have tried to increase the number of trees to see if it would give better estimations, however, unfortunately, the capacity of RStudios that we have used is not enough to run random forests with more than 300 trees.
 
 
@@ -857,7 +814,6 @@ We could have tried to increase the number of trees to see if it would give bett
 
 * ### Boosting ###
 
-We use the `gbm` function to run boosting trees. We set the number of trees to be 150, which is half of the trees in Random Forest. The `interaction.depth` is set to 4 and `shrinkage` is 0.1. We add a commend in this function, `cv.folds`, to apply KNN cross-validation in traing, and we split the training set into 10 folds.
 ```{r}
 boostingcv <- gbm(f1,
                   data = avo_train,
@@ -872,8 +828,6 @@ yhat_btree <- predict(boostingcv, avo_train, n.trees = 150)
 mse_btree <- mean((yhat_btree - y1_train) ^ 2)
 print(mse_btree)
 ```
-Here we get the train MSE for boosting. Then we calculate the test MSE.
-
 
 ```{r}
 yhat_btree_test <- predict(boostingcv, avo_test, n.trees = 150)
@@ -881,7 +835,6 @@ mse_btree_test <- mean((yhat_btree_test - y1_test) ^ 2)
 print(mse_btree_test)
 ```
 
-Next, we add the boosting predictions into train and test sets to plot the trend for predictions and actuals.
 ```{r}
 avo_train$prediction_btree <- yhat_btree
 avo_test$prediction_btree <- yhat_btree_test
@@ -905,7 +858,7 @@ btree_plot +
   geom_vline(aes(xintercept = as.numeric(Date[113])),
              linetype = "dashed", size = 1, col = "#AA471F")
 ```
-The boosting model gives a good illustration in seasonality, though the tset MSE is a little bit higher then Random Forest. At the end of this step, we prefer Random Forest as our choice of model
+
 
 * ### Lasso with a New Variable ###
 ```{r}
@@ -1326,4 +1279,3 @@ The graph does not show much of the difference, however we know that it is bette
 ----------
 
 ### References ###
-- 
