@@ -39,6 +39,8 @@ library(fastDummies)
 library(scales)
 library(glmnet)
 library(zoo)
+library(ISLR)
+library(leaps)
 library(rpart)
 library(rpart.plot)
 library(tree)
@@ -405,13 +407,12 @@ plot1_fw + geom_vline(aes(xintercept = as.numeric(Date[113])),
 
 
 * ### Backward Selection ###
+
 ```{r}
-install.packages(ISLR)
-library(ISLR)
-library(leaps)
 regfit.bwd = regsubsets(f1, data = avo_train, nvmax = 19, method = "backward")
 summary(regfit.bwd)
 ```
+
 ```{r}
 sub_model<-lm(f1, data = avo_train)
 yhat_train_stepwise <- predict(sub_model, avo_train)
@@ -465,7 +466,6 @@ MSE_test_stepwise2
 Calculate the yhat price for the avo dataset and merge the date frame
 ```{r}
 yhat_avo_avgprice <- predict(sub_model2, avo)
-library(ggplot2)
 df1_bwd<-avo %>% 
   select(Date, AveragePrice)
 df2_bwd<-cbind(df1_bwd, yhat_avo_avgprice)
@@ -493,6 +493,7 @@ plot1_bwd + geom_vline(aes(xintercept = as.numeric(Date[113])),
 * ### Ridge Regression ###
 
 run ridge
+
 ```{R}
 fit_ridge <- cv.glmnet(x1_train, y1_train, alpha = 0, nfolds = 100)
 fit_ridge$lambda
@@ -536,7 +537,7 @@ p1<-avo %>%
 p2<-cbind(p1, yhat_1)
 ```
 
-## Plot
+Plot
 ```{R}
 p2 %>%
   group_by(Date)%>%
