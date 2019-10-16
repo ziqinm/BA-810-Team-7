@@ -39,6 +39,8 @@ library(fastDummies)
 library(scales)
 library(glmnet)
 library(zoo)
+library(ISLR)
+library(leaps)
 library(rpart)
 library(rpart.plot)
 library(tree)
@@ -406,12 +408,10 @@ plot1_fw + geom_vline(aes(xintercept = as.numeric(Date[113])),
 
 * ### Backward Selection ###
 ```{r}
-install.packages(ISLR)
-library(ISLR)
-library(leaps)
 regfit.bwd = regsubsets(f1, data = avo_train, nvmax = 19, method = "backward")
 summary(regfit.bwd)
 ```
+
 ```{r}
 sub_model<-lm(f1, data = avo_train)
 yhat_train_stepwise <- predict(sub_model, avo_train)
@@ -465,7 +465,6 @@ MSE_test_stepwise2
 Calculate the yhat price for the avo dataset and merge the date frame
 ```{r}
 yhat_avo_avgprice <- predict(sub_model2, avo)
-library(ggplot2)
 df1_bwd<-avo %>% 
   select(Date, AveragePrice)
 df2_bwd<-cbind(df1_bwd, yhat_avo_avgprice)
@@ -514,7 +513,6 @@ for (i in 1:length(fit_ridge$lambda)) {
 mse_train_ridge
 mse_test_ridge
 min(mse_test_ridge)
-# 0.1366643
 ```
 
 ```{R}
@@ -702,14 +700,12 @@ rpart.plot(fit.tree, type = 1)
 yhat.train.tree <- predict(fit.tree, avo_train)
 mse.train.tree <- mean((avo_train$AveragePrice - yhat.train.tree)^2)
 mse.train.tree
-# 0.03397259
 ```
 
 ```{r}
 yhat.test.tree <- predict(fit.tree, avo_test)
 mse.test.tree <- mean((avo_test$AveragePrice - yhat.test.tree)^2)
 mse.test.tree
-# 0.1468156
 ```
 
 * ### Regression Tree ###
@@ -732,7 +728,6 @@ text(prune.avo,pretty =0)
 yhat <- predict(tree.avo, newdata = avo_test)
 mse_regreTree_test <- mean((yhat - avo_test$AveragePrice)^2)
 mse_regreTree_test
-# 0.1499934
 ```
 
 
@@ -1045,7 +1040,9 @@ cv.out = cv.glmnet(x1_train, y1_train, alpha = 1)
 
 Plot the lambda
 ```{r}
-plot(cv.out)
+plot(cv.out,
+     xlab = "Log(lambda)")
+
 ```
 
 Check the best lambda
@@ -1087,6 +1084,8 @@ for (i in 1:length(lmodel2$lambda)) {
 }
 mse_train1
 mse_test1
+min(mse_train1)
+min(mse_test1)
 
 lambda_min_mse_train1<- lmodel2$lambda[which.min(mse_train1)]
 lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
@@ -1129,7 +1128,9 @@ class(df3$Date)
   geom_line(mapping = aes(x=Date,
                            y=meanpriced), col = "#356211")+
   geom_line(mapping = aes(x=Date, y= meanpre), col = "#cda989")+
-  geom_vline(xintercept=as.numeric(as.Date("2017-03-01")), col = "#AA471F", linetype = "dashed")+
+  geom_vline(xintercept=as.numeric(as.Date("2017-03-01")), col = "#AA471F", linetype = "dashed", size = 1)+
+   labs(title = "Lasso with new variables",
+        y = "Mean Price") +
    theme_classic()
 ```
 We can see from this graph, that compare with the regular lasso that we did before, this graph did a much better prediction with our dataset. It not only showed a season based change for avocado price but also have some sort of change within one year period. 
