@@ -137,7 +137,6 @@ theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 ```{r}
-best_fit_fw
 
 fw<- as.formula(AveragePrice ~ month + TotalBags + Area_TotalUS + Area_Plains + other_PLU)
 fit.fw<-lm(fw, data = avo_train)

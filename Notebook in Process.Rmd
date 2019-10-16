@@ -36,9 +36,12 @@ library(lubridate)
 library(ggplot2)
 library(ggthemes)
 library(fastDummies)
+library(scales)
 library(glmnet)
+library(zoo)
 library(rpart)
 library(rpart.plot)
+library(tree)
 library(randomForest)
 library(gbm)
 
@@ -212,7 +215,7 @@ x1_train <- model.matrix(f1,avo_train)[,-1]
 y1_train <- avo_train$AveragePrice
 x1_test <- model.matrix(f1,avo_test)[,-1]
 y1_test <- avo_test$AveragePrice
-
+x1_avo <- model.matrix(f1, avo)[,-1]
 ```
 
 ----------
@@ -221,7 +224,185 @@ y1_test <- avo_test$AveragePrice
 
 * ### Linear Regression ###
 
+```{r}
+fit.lm <- lm(f1, avo_train)
+fit.lm
+
+y.train <- avo_train$AveragePrice
+y.test <- avo_test$AveragePrice
+yhat.train.lm <- predict(fit.lm)
+mse.train.lm <- mean((y.train - yhat.train.lm)^2)
+yhat.test.lm <- predict(fit.lm, avo_test)
+mse.test.lm <- mean((y.test - yhat.test.lm)^2)
+mse.train.lm
+mse.test.lm
+
+coef(fit.lm)
+plot(fit.lm)
+```
+
 * ### Forward Selection ###
+
+```{r}
+avo1 <- avo
+avo1$ID <- NULL
+avo1$year<-NULL
+avo1$Date<-NULL
+avo1$region<-NULL
+avo1$Area<-NULL
+avo1$AveragePrice<-NULL
+xnames <- colnames(avo1)
+xnames <- xnames[!xnames %in% c("type_conventional","type_organic", "TotalVolume", "PLU4046", "PLU4770", "PLU4225","SmallBags", "LargeBags","XLargeBags","Area_NewEngland","Area_Southeast","Area_Mideast","Area_RockyMountain","Area_FarWest","Area_GreatLakes","Area_Southwest","Area_Plains + Area_TotalUS")]
+fit_fw <- lm(AveragePrice ~ 1, data = avo_train)
+yhat_train <- predict(fit_fw, avo_train)
+mse_train <- mean((avo_train$AveragePrice - yhat_train) ^ 2)
+yhat_test <- predict(fit_fw, avo_test)
+mse_test <- mean((avo_test$AveragePrice - yhat_test) ^ 2)
+
+log_fw <-
+tibble(
+xname = "intercept",
+model = deparse(fit_fw$call),
+mse_train = mse_train,
+mse_test = mse_test
+)
+
+best_mse_train <- NA
+best_mse_test <- NA
+best_fit_fw <- NA
+best_xname <- NA
+for (xname in xnames) {
+# take a moment to examine and understand the following line
+fit_fw_tmp <- update(fit_fw, as.formula(paste0(" ~ ", xname)))
+# compute MSE train
+yhat_train_tmp <- predict(fit_fw_tmp, avo_train)
+mse_train_tmp <- mean((avo_train$AveragePrice - yhat_train_tmp) ^ 2)
+# compute MSE test
+yhat_test_tmp <- predict(fit_fw_tmp, avo_test)
+mse_test_tmp <- mean((avo_test$AveragePrice - yhat_test_tmp) ^ 2)
+# if this is the first predictor to be examined,
+# or if this predictors yields a lower MSE that the current
+# best, then store this predictor as the current best predictor
+if (is.na(best_mse_test) | mse_test_tmp < best_mse_test) {
+best_xname <- xname
+best_fit_fw <- fit_fw_tmp
+best_mse_train <- mse_train_tmp
+best_mse_test <- mse_test_tmp
+}
+}
+best_mse_train
+best_mse_test
+```
+
+```{r}
+log_fw <-
+log_fw %>% add_row(
+xname = best_xname,
+model = paste0(deparse(best_fit_fw$call), collapse = ""),
+mse_train = best_mse_train,
+mse_test = best_mse_test
+)
+
+log_fw
+
+# here is a complete solution
+xnames<- colnames(avo1)
+xnames <- xnames[!xnames %in% c("type_conventional","type_organic", "TotalVolume", "PLU4046", "PLU4770", "PLU4225","SmallBags", "LargeBags","XLargeBags","Area_NewEngland","Area_Southeast","Area_Mideast","Area_RockyMountain","Area_FarWest","Area_GreatLakes","Area_Southwest","Area_Plains + Area_TotalUS")]
+fit_fw <- lm(AveragePrice ~ 1, data = avo_train)
+yhat_train <- predict(fit_fw, avo_train)
+yhat_test <- predict(fit_fw, avo_test)
+mse_train <- mean((avo_train$AveragePrice - yhat_train)^2)
+mse_test <- mean((avo_test$AveragePrice - yhat_test)^2)
+xname <- "intercept"
+
+log_fw <-
+tibble(
+xname = xname,
+model = paste0(deparse(fit_fw$call), collapse = ""),
+mse_train = mse_train,
+mse_test = mse_test
+)
+while (length(xnames) > 0) {
+best_mse_train <- NA
+best_mse_test <- NA
+best_fit_fw <- NA
+best_xname <- NA
+# select the next best predictor
+for (xname in xnames) {
+# take a moment to examine and understand the following line
+fit_fw_tmp <- update(fit_fw, as.formula(paste0(". ~ . + ", xname)))
+# compute MSE train
+yhat_train_tmp <- predict(fit_fw_tmp, avo_train)
+mse_train_tmp <- mean((avo_train$AveragePrice - yhat_train_tmp) ^ 2)
+# compute MSE test
+yhat_test_tmp <- predict(fit_fw_tmp, avo_test)
+mse_test_tmp <- mean((avo_test$AveragePrice - yhat_test_tmp) ^ 2)
+
+# if this is the first predictor to be examined,
+# or if this predictors yields a lower MSE that the current
+# best, then store this predictor as the current best predictor
+if (is.na(best_mse_test) | mse_test_tmp < best_mse_test) {
+best_xname <- xname
+best_fit_fw <- fit_fw_tmp
+best_mse_train <- mse_train_tmp
+best_mse_test <- mse_test_tmp
+}
+}
+log_fw <-
+log_fw %>% add_row(
+xname = best_xname,
+model = paste0(deparse(best_fit_fw$call), collapse = ""),
+mse_train = best_mse_train,
+mse_test = best_mse_test
+)
+# adopt the best model for the next iteration
+fit_fw <- best_fit_fw
+# remove the current best predictor from the list of predictors
+xnames <- xnames[xnames!=best_xname]
+}
+```
+
+```{r}
+ggplot(log_fw, aes(seq_along(xname), mse_test)) +
+geom_point() +
+geom_line() +
+geom_point(aes(y=mse_train), color="blue") +
+geom_line(aes(y=mse_train), color="blue") +
+scale_x_continuous("Variables", labels = log_fw$xname, breaks = seq_along(log_fw$xname)) +
+scale_y_continuous("MSE test") +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r}
+fw<- as.formula(AveragePrice ~ month + TotalBags + Area_TotalUS + Area_Plains + other_PLU)
+fit.fw<-lm(fw, data = avo_train)
+```
+
+```{r}
+## calculate the yhat price for the avo dataset
+yhat_avo_fw <- predict(fit.fw, avo)
+df1_fw<-avo %>% 
+  select(Date, AveragePrice)
+df2_fw<-cbind(df1_fw, yhat_avo_fw)
+colnames(df2_fw)
+names(df2_fw)[3]<-"AveragePrice_hat"
+## Plot the actual average price and the predictive average price
+plot1_fw <- df2_fw %>% 
+  group_by(Date) %>% 
+  summarize(
+    MeanAvg=mean(AveragePrice),
+    MeanAvg_hat=mean(AveragePrice_hat))%>% 
+    ggplot()+
+    geom_line(aes(Date, MeanAvg),color = "#356211")+
+    geom_line(aes(Date, MeanAvg_hat), color = "#cda989")+
+    theme_classic()
+
+plot1_fw + geom_vline(aes(xintercept = as.numeric(Date[113])), 
+                   linetype = "dashed", size = 1,
+                   color = "#AA471F")
+
+```
+
 
 * ### Backward Selection ###
 
@@ -229,7 +410,6 @@ y1_test <- avo_test$AveragePrice
 
 run ridge
 ```{R}
-x1_avo <- model.matrix(f1, avo)[,-1]
 fit_ridge <- cv.glmnet(x1_train, y1_train, alpha = 0, nfolds = 100)
 fit_ridge$lambda
 ```
@@ -322,7 +502,48 @@ mse.test.tree
 
 * ### Regression Tree ###
 
+```{r}
+tree.avo =tree(f1, avo_train)
+summary(tree.avo)
+```
+
+```{r}
+cv.avo =cv.tree(tree.avo)
+
+prune.avo =prune.tree(tree.avo,best =5)
+plot(prune.avo)
+text(prune.avo,pretty =0)
+```
+
+
+```{r}
+yhat <- predict(tree.avo, newdata = avo_test)
+mse_regreTree_test <- mean((yhat - avo_test$AveragePrice)^2)
+mse_regreTree_test
+# 0.1499934
+```
+
+
 * ### Bagging ###
+
+```{r}
+set.seed (1)
+bag.avo =randomForest(f1, data = avo_train, 
+                           mtry = 19, importance =TRUE)
+bag.avo
+```
+
+```{r}
+yhat.bag = predict (bag.avo, newdata = avo_test)
+plot(yhat.bag, avo_test$AveragePrice, main = "Scatter Plot for Bagging",
+     xlab = "Prediction price in test set", ylab = "Average price in test set", 
+     col = "#bdcc64")
+abline (0,1)
+
+mse_bag_test <- mean((yhat.bag - avo_test$AveragePrice)^2)
+mse_bag_test
+```
+
 
 * ### Random Forests ###
 
