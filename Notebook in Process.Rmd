@@ -405,6 +405,90 @@ plot1_fw + geom_vline(aes(xintercept = as.numeric(Date[113])),
 
 
 * ### Backward Selection ###
+```{r}
+install.packages(ISLR)
+library(ISLR)
+library(leaps)
+regfit.bwd = regsubsets(f1, data = avo_train, nvmax = 19, method = "backward")
+summary(regfit.bwd)
+```
+```{r}
+sub_model<-lm(f1, data = avo_train)
+yhat_train_stepwise <- predict(sub_model, avo_train)
+MSE_train_stepwise <- mean((avo_train$AveragePrice - yhat_train_stepwise)^2)
+MSE_train_stepwise
+yhat_test_stepwise <- predict(sub_model, avo_test)
+MSE_test_stepwise <- mean((avo_test$AveragePrice - yhat_test_stepwise)^2)
+MSE_test_stepwise
+
+```
+Based on the coefficients, eliminate "Area_TotalUS", "type_organic".
+```{r}
+f1_1 <- as.formula(AveragePrice ~ month + type_conventional + TotalVolume + 
+                      PLU4046 + PLU4770 + PLU4225 + SmallBags + LargeBags + XLargeBags + 
+                      + Area_NewEngland + Area_Southeast
+                    + Area_Mideast + Area_RockyMountain
+                    + Area_FarWest + Area_GreatLakes
+                    + Area_Southwest
+                    + Area_Plains)
+regfit.bwd1 = regsubsets(f1_1, data = avo_train, nvmax = 19, method = "backward")
+summary(regfit.bwd1)
+
+sub_model1<-lm(f1_1, data = avo_train)
+yhat_train_stepwise1 <- predict(sub_model1, avo_train)
+MSE_train_stepwise1 <- mean((avo_train$AveragePrice - yhat_train_stepwise1)^2)
+MSE_train_stepwise1
+yhat_test_stepwise1 <- predict(sub_model1, avo_test)
+MSE_test_stepwise1 <- mean((avo_test$AveragePrice - yhat_test_stepwise1)^2)
+MSE_test_stepwise1
+```
+Continue to use backward selection to train the model
+Eliminate "LargeBags"
+```{r}
+f1_2 <- as.formula(AveragePrice ~ month + type_conventional + TotalVolume + 
+                     PLU4046 + PLU4770 + PLU4225 + SmallBags + XLargeBags
+                     + Area_NewEngland +
+                   Area_Mideast + Area_RockyMountain
+                   + Area_FarWest + Area_GreatLakes + Area_Southwest + Area_Plains
+                   )
+regfit.bwd2 = regsubsets(f1_2, data = avo_train, nvmax = 19, method = "backward")
+summary(regfit.bwd2)
+
+sub_model2<-lm(f1_2, data = avo_train)
+yhat_train_stepwise2 <- predict(sub_model2, avo_train)
+MSE_train_stepwise2 <- mean((avo_train$AveragePrice - yhat_train_stepwise2)^2)
+MSE_train_stepwise2
+yhat_test_stepwise2 <- predict(sub_model2, avo_test)
+MSE_test_stepwise2 <- mean((avo_test$AveragePrice - yhat_test_stepwise2)^2)
+MSE_test_stepwise2
+```
+Calculate the yhat price for the avo dataset and merge the date frame
+```{r}
+yhat_avo_avgprice <- predict(sub_model2, avo)
+library(ggplot2)
+df1_bwd<-avo %>% 
+  select(Date, AveragePrice)
+df2_bwd<-cbind(df1_bwd, yhat_avo_avgprice)
+colnames(df2_bwd)
+names(df2_bwd)[3]<-"AveragePrice_hat"
+```
+
+Plot the actual average price and the predictive average price
+```{r}
+plot1_bwd <- df2_bwd %>% 
+  group_by(Date) %>% 
+  summarize(
+    MeanAvg=mean(AveragePrice),
+    MeanAvg_hat=mean(AveragePrice_hat))%>% 
+    ggplot()+
+    geom_line(aes(Date, MeanAvg),color = "blue")+
+    geom_line(aes(Date, MeanAvg_hat), color = "red")+
+    theme_classic()
+
+plot1_bwd + geom_vline(aes(xintercept = as.numeric(Date[113])), 
+                   linetype = "dashed", size = 1,
+                   color = "lightgreen")
+```
 
 * ### Ridge Regression ###
 
@@ -452,7 +536,7 @@ p1<-avo %>%
 p2<-cbind(p1, yhat_1)
 ```
 
-Plot
+## Plot
 ```{R}
 p2 %>%
   group_by(Date)%>%
@@ -474,15 +558,11 @@ The ridge model is pretty much the same with lasso model, so we will see the dif
 
 
 * ### Lasso Regression ###
-
-Run lasso
-```{R}
+## Run lasso
 lmodel <- glmnet(x1_train, y1_train, alpha = 1, nlambda = 100)
 lmodel$lambda
-```
 
-Predict response
-```{R}
+## Predict response
 y1_train_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_train)
 y1_test_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_test)
 length(y1_test_hat)
@@ -500,10 +580,8 @@ lambda_min_mse_train<- lmodel$lambda[which.min(mse_train)]
 lambda_min_mse_test <-lmodel$lambda[which.min(mse_test)]
 lambda_min_mse_train
 lambda_min_mse_test
-```
 
-Using Cross-validation fucntion to find the best lambda
-```{R}
+## Using Cross-validation fucntion to find the best lambda
 set.seed(1)
 cv.out = cv.glmnet(x1_train, y1_train, alpha = 1)
 ## plot the lambda
@@ -511,10 +589,8 @@ plot(cv.out)
 ##check the best lambda
 bestlam = cv.out$lambda.min
 bestlam ## the best lamdba for training dataset is same as lambda_min_mse_train
-```
 
-create a new formula for new predictors(eliminate the uncorrelated predictors)
-```{R}
+## create a new formula for new predictors(eliminate the uncorrelated predictors)
 f2 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + 
                    PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
                    Area_NewEngland + Area_Southeast + Area_Mideast + 
@@ -543,7 +619,6 @@ for (i in 1:length(lmodel2$lambda)) {
 }
 mse_train1
 mse_test1
-min(mse_test1)
 
 lambda_min_mse_train1<- lmodel2$lambda[which.min(mse_train1)]
 lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
@@ -562,6 +637,7 @@ f2coef
 y1_avo_min_lambda_hat <- predict(lmodel, s = lambda_min_mse_test, newx = x1_avo)
 class(y1_avo_min_lambda_hat)
 ## Aggregate data into one dataframe for the first model prediction
+library(ggplot2)
 df1<-avo %>% 
   select(Date, AveragePrice)
 df2<-cbind(df1, y1_avo_min_lambda_hat)
@@ -585,8 +661,10 @@ plot1 <- df2 %>%
 plot1 + geom_vline(aes(xintercept = as.numeric(Date[113])), 
                    linetype = "dashed", size = 1,
                    color = "lightgreen")
-```
-We can see that our ridge model actually did a better job than lasso. Ridge is more flexibly than lasso, maybe each variable have something to do in our data set, so ridge works better than lasso. 
+
+##We can see that our ridge model actually did a better job than lasso. 
+##Ridge is more flexibly than lasso, maybe each variable have something 
+##to do in our data set, so ridge works better than lasso. 
 
 
 * ### Decision Tree ###
