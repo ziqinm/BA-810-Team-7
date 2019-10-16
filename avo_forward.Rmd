@@ -4,6 +4,15 @@ output: html_document
 ---
 
 ```{r}
+avo$ID <- NULL
+avo$year<-NULL
+avo$Date<-NULL
+avo$region<-NULL
+avo$Area<-NULL
+avo$AveragePrice<-NULL
+View(avo)
+xnames <- colnames(avo)
+xnames <- xnames[!xnames %in% c("type_conventional","type_organic", "TotalVolume", "PLU4046", "PLU4770", "PLU4225","SmallBags", "LargeBags","XLargeBags","Area_NewEngland","Area_Southeast","Area_Mideast","Area_RockyMountain","Area_FarWest","Area_GreatLakes","Area_Southwest","Area_Plains + Area_TotalUS")]
 fit_fw <- lm(AveragePrice ~ 1, data = avo_train)
 yhat_train <- predict(fit_fw, avo_train)
 mse_train <- mean((avo_train$AveragePrice - yhat_train) ^ 2)
@@ -35,15 +44,14 @@ mse_test_tmp <- mean((avo_test$AveragePrice - yhat_test_tmp) ^ 2)
 # or if this predictors yields a lower MSE that the current
 # best, then store this predictor as the current best predictor
 if (is.na(best_mse_test) | mse_test_tmp < best_mse_test) {
-2
 best_xname <- xname
 best_fit_fw <- fit_fw_tmp
 best_mse_train <- mse_train_tmp
 best_mse_test <- mse_test_tmp
 }
 }
-#Which variable increases out-of-sample predictive accuracy the most
-print(best_xname)
+best_mse_train
+best_mse_test
 ```
 
 ```{r}
@@ -57,17 +65,16 @@ mse_test = best_mse_test
 
 log_fw
 
-xnames <- xnames[xnames[xnames!=best_xname]]
-
 # here is a complete solution
-xnames <- colnames(avo_train)
-xnames <- xnames[!xnames %in% c("type_conventional","type_organic", "TotalVolume", "PLU4046", "PLU4770", "PLU4225","SmallBags", "LargeBags","XLargeBags","Area_NewEngland","Area_Southeast","Area_Mideast","Area_RockyMountain","Area_FarWest","Area_GreatLakes","Area_GrateLakes","Area_Southwest","Area_Plains + Area_TotalUS")]
+xnames<- colnames(avo)
+xnames <- xnames[!xnames %in% c("type_conventional","type_organic", "TotalVolume", "PLU4046", "PLU4770", "PLU4225","SmallBags", "LargeBags","XLargeBags","Area_NewEngland","Area_Southeast","Area_Mideast","Area_RockyMountain","Area_FarWest","Area_GreatLakes","Area_Southwest","Area_Plains + Area_TotalUS")]
 fit_fw <- lm(AveragePrice ~ 1, data = avo_train)
 yhat_train <- predict(fit_fw, avo_train)
 yhat_test <- predict(fit_fw, avo_test)
-mse_train <- mean((avo_train$AveragePrice - yhat_train) ^ 2)
-mse_test <- mean((avo_test$AveragePrice - yhat_test) ^ 2)
+mse_train <- mean((avo_train$AveragePrice - yhat_train)^2)
+mse_test <- mean((avo_test$AveragePrice - yhat_test)^2)
 xname <- "intercept"
+
 log_fw <-
 tibble(
 xname = xname,
@@ -108,13 +115,11 @@ model = paste0(deparse(best_fit_fw$call), collapse = ""),
 mse_train = best_mse_train,
 mse_test = best_mse_test
 )
-mse_test
 # adopt the best model for the next iteration
 fit_fw <- best_fit_fw
 # remove the current best predictor from the list of predictors
 xnames <- xnames[xnames!=best_xname]
 }
-
 ```
 
 
@@ -124,14 +129,47 @@ xnames <- xnames[xnames!=best_xname]
 ggplot(log_fw, aes(seq_along(xname), mse_test)) +
 geom_point() +
 geom_line() +
-geom_point(aes(y=mse_train_tmp), color="blue") +
-geom_line(aes(y=mse_train_tmp), color="blue") +
+geom_point(aes(y=mse_train), color="blue") +
+geom_line(aes(y=mse_train), color="blue") +
 scale_x_continuous("Variables", labels = log_fw$xname, breaks = seq_along(log_fw$xname)) +
 scale_y_continuous("MSE test") +
 theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+```{r}
+best_fit_fw
+
+fw<- as.formula(AveragePrice ~ month + TotalBags + Area_TotalUS + Area_Plains + other_PLU)
+fit.fw<-lm(fw, data = avo_train)
+
+```
+
+```{r}
+
+## calculate the yhat price for the avo dataset
+yhat_avo_fw <- predict(fit.fw, avo)
+library(ggplot2)
+df1_fw<-avo %>% 
+  select(Date, AveragePrice)
+df2_fw<-cbind(df1_fw, yhat_avo_fw)
+colnames(df2_fw)
+names(df2_fw)[3]<-"AveragePrice_hat"
+## Plot the actual average price and the predictive average price
+plot1_fw <- df2_fw %>% 
+  group_by(Date) %>% 
+  summarize(
+    MeanAvg=mean(AveragePrice),
+    MeanAvg_hat=mean(AveragePrice_hat))%>% 
+    ggplot()+
+    geom_line(aes(Date, MeanAvg),color = "blue")+
+    geom_line(aes(Date, MeanAvg_hat), color = "red")+
+    theme_classic()
+
+plot1_fw + geom_vline(aes(xintercept = as.numeric(Date[113])), 
+                   linetype = "dashed", size = 1,
+                   color = "lightgreen")
 
 
 
+```
 
