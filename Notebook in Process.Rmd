@@ -638,7 +638,7 @@ mse_test1
 min(mse_train1)
 min(mse_test1)
 ```
-Check again with the new minumue lambda for the train and test dataset
+Check again with the new minimum lambda for the train and test dataset
 ```{r}
 lambda_min_mse_train1<- lmodel2$lambda[which.min(mse_train1)]
 lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
