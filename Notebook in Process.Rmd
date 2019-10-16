@@ -290,7 +290,7 @@ p2 %>%
   labs(title = "Ridge Regression",
        y = "Mean Price")
 ```
-
+The ridge model is pretty much the same with lasso model, so we will see the difference between two models to see which model gives a more accurate prediction for our dataset after building a lasso model.
 
 
 * ### Lasso Regression ###
