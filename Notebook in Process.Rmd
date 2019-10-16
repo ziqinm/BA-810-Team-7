@@ -5,13 +5,16 @@ date: October 16, 2019
 output: html_notebook
 ---
 
+This notebook is created by Cohort A Team 7 for the BA 810 team project. The content includes our business setting to a existing dataset and our attempts in machine learning model training.
+
 ----------
 
 ## Introduction ##
 
+
 * ### Business Setting ###
 
-(who cares and why)
+#### who cares and why ####
 
 * ### Business Problem ###
 
