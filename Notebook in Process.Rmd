@@ -5,32 +5,9 @@ date: October 16, 2019
 output: html_notebook
 ---
 
-This notebook is created by Cohort A Team 7 for the BA 810 team project. The content includes our business setting to a existing dataset and our attempts in machine learning model training.
+## Notebook Setting ##
 
-----------
-
-## Introduction ##
-
-
-* ### Business Setting ###
-
-#### who cares and why ####
-
-* ### Business Problem ###
-
---------------
-
-## Dataset Debrief ##
-
-* ### Data Source ###
-
-* ### Descriptive Analysis ###
-
-----------
-
-## Data Preparation ##
-
-Before looking at the dataset, we first load the packages that will be used.
+Load the required packages.
 ```{r}
 options(stringsAsFactors = FALSE)
 
@@ -52,15 +29,70 @@ library(gbm)
 
 # Set the ggtheme beforehead for all plots
 theme_set(theme_clean())
-
 ```
 
-Then we load the original kaggle dataset and print a quick view of columns and data types.
+----------
+
+## Introduction ##
+
+This notebook is created by Cohort A Team 7 for the BA 810 team project. The content includes our business setting to a existing dataset and our attempts in machine learning model training.
+
+### Business Problem ###
+
+Our team is planning to open a store called "Everything Avocado", basically selling avocado food products including avocado toasts, tortilla chips with guacamole, and avocado smoothies. During opening preparation, we want to set a budget in buying raw avocados as inventories, so we would like to learn the future price for avocados.
+
+Fortunately, all of the team members are taking a machine learning course together, then we decided to develope a model to **predict avocado prices** using existing data source.
+
+### Audience of our model ###
+
+We expect that our optimal model could be applied to other raw product retails, especially in fresh products (fruits and vegetables). Ideally, the price any products of this type could be predicted, if the prices are influenced by similar predictors. In a business setting, whoever wants to get a sense of future product price (retailers, customers, market analysts, etc.) will hold a huge interest in our model.
+
+--------------
+
+## Dataset Debrief ##
+
+* ### Data Source ###
+
+The dataset we keep using is the `Avocado Price` dataset from [Kaggle](https://www.kaggle.com/neuromusic/avocado-prices). It is the record of historical data on avocado prices and sales volume in multiple US markets. 
+
 ```{r}
 ds <- read_csv("avocado.csv")  
 glimpse(ds)
 ```
-There are 14 columns in this dataset, and we will use `AveragePrice` as our prediction. `X1` gives a id for each observation, and we want to transfer that into row numbers for each row by adding 1. Most of the data types are `<dbl>`, and there are only 2 columns with character vectors, `type` and `region`. We will transfer them to dummy variables to train our models.
+Here is a quick view of columns and data types. There are 14 columns in this dataset, and we will use `AveragePrice` as our prediction. `X1` gives a id for each observation, and we want to transfer that into row numbers for each row by adding 1. Most of the data types are `<dbl>`, and there are only 2 columns with character vectors, `type` and `region`. We will transfer them to dummy variables to train our models. The time span is from Janurary 4, 2015 to March 25, 2018. 
+
+* ### Descriptive Analysis ###
+
+Before going into the modeling, we made a plot for the average price of avocados grouped by date, and we observed that average price usually increases during the second half of the year.
+```{r}
+ds %>% 
+group_by(Date) %>%
+  summarise(meanpriced = mean(AveragePrice)) %>%
+  ggplot(aes(x = Date, y = meanpriced)) +
+  geom_point(col = "#4a7337") +
+  geom_smooth(col = "#d9cd65", se = FALSE) + 
+  labs(y = "Average price",
+       title = "Average price by date") + 
+  theme_bw()
+```
+
+We also map the average quantity (Volume) by dates. We noticed that in the beginning of each year, there is one day when the volume sold is extremely high. We then checked the calendar and happened to find that these days were all Super Bowl game days!
+```{r}
+ds %>%
+  group_by(Date) %>%
+  summarise(totalvold = sum(`Total Volume`)) %>%
+  ggplot(aes(x = Date, y = totalvold)) +
+  geom_point(col = "#4a7337") +
+  geom_smooth(col = "#d9cd65", se = FALSE) + 
+  labs(y = "Total volumn sold",
+       title = "Total volumn sold by date") + 
+  theme_bw() 
+```
+
+
+----------
+
+## Data Preparation ##
 
 In the following code chunk, we took multiple steps to arrange the columns.
 ```{r}
