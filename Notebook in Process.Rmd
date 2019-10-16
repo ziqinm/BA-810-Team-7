@@ -515,14 +515,14 @@ mse_train_ridge
 mse_test_ridge
 min(mse_train_ridge)
 min(mse_test_ridge)
+
 ```
 
 ```{R}
-lambda_min_mse_train<- fit_ridge$lambda[which.min(mse_train_ridge)]
-lambda_min_mse_test <-fit_ridge$lambda[which.min(mse_test_ridge)]
-lambda_min_mse_train
-lambda_min_mse_test
-
+lambda_min_mse_train_ridge<- fit_ridge$lambda[which.min(mse_train_ridge)]
+lambda_min_mse_test_ridge <-fit_ridge$lambda[which.min(mse_test_ridge)]
+lambda_min_mse_train_ridge
+lambda_min_mse_test_ridge
 
 yhat_train_ridge <- predict(fit_ridge, x1_train, s = 0.0261992)
 yhat_test_ridge <- predict(fit_ridge, x1_test, s =   0.1160787)
@@ -582,10 +582,10 @@ min(mse_test)
 ```
 Check the minimun lambda for the train and test dataset
 ```{r}
-lambda_min_mse_train<- lmodel$lambda[which.min(mse_train)]
-lambda_min_mse_test <-lmodel$lambda[which.min(mse_test)]
-lambda_min_mse_train
-lambda_min_mse_test
+lambda_min_mse_train_lasso<- lmodel$lambda[which.min(mse_train)]
+lambda_min_mse_test_lasso <-lmodel$lambda[which.min(mse_test)]
+lambda_min_mse_train_lasso
+lambda_min_mse_test_lasso
 ```
 Using Cross-validation fucntion to find the best lambda, the result shows the best lambda for train dataset is same as above. 
 ```{r}
@@ -599,7 +599,7 @@ bestlam ## the best lamdba for training dataset is same as lambda_min_mse_train
 ```
 Check the coefficient for f1 model, the result shows that there are some predictors might be eliminated. "TotalVolume", "PLU4225", SmallBags", and "Area_TotalUS". 
 ```{r}
-f1coef<-coef(lmodel, s = lambda_min_mse_test)
+f1coef<-coef(lmodel, s = lambda_min_mse_test_lasso)
 f1coef
 ```
 
@@ -1266,32 +1266,17 @@ The graph does not show much of the difference, however we know that it is bette
 
 * ### Key to choose the best model ###
 
-We have noticed that our dataset is in time series, and based on professor's comment, the existing models we practiced in this class might not compute the predictions as we initially expected. Since we have observed a seasonality in average prices throught our a year when we inspected the dataset, our primary rule for choosing the "best" model is to find the models with similar trend as well as the lowest test MSE compared to other models. In practice, we plot the lines for predictions and real prices for the entire dataset, and visually inspect the ones with the same trend. After we filter models by trend, we compare the test MSEs to find the "fit" model in our case.
+* ### The best one ###
 
-* ### The top models ###
-
-We have collected all test MSEs in Modeling Section. Within the scope of existing models (instructed in class), Random Forest gives the lowest test MSE (0.1279945) and the good fit in seasonality. We also created two models by adding previous predictions as variabes to predict more accurately in time-series data; together with all models we did, the lowest test MSE turns out to be 0.1113422, from the Lasso with Loop. 
-Therefore, we have two candidates, Random Forest and Lasso with Loop. Random Forest stands out in existing models, while the training-in-process Lasso can give a more precious approach.
-
-One thing we have to mention is that, in practice, none of our models could give the accuracy we expected before exploring the dataset. This is the major challenge in this project.
-
-* ### Challenge ###
-
-In order to catch the time influence for time-series datase, we tried two new models by adding variables from previous preictions. Specifically, Lasso with New Variables adopts old observations, and result proves that observations from previous days/periods DO influence future predictions. But this method cannot be applied in real-life practice. When adding the new columns, we lagged some rows of the test data to train the model, and this step can never be accomplished, even permitted, in actual machine learning process.
-
-Lasso with Loop is theretically practical and applicable to deal with such data. The biggest disadvantage for this model in our training process is that it is too easy to crush the envirnment, immensely increasing our cost in modeling. If we want to play with such algorithms in real life, we will search for mature models similar to what we built here.
+* ### Challenges ###
 
 ----------
 
 ## Conclusions ##
 
-Given the business setting to open an "Everything Avocado" store and the goal to use models to predict future avocado price, out team found an existing time-series dataset on avocado prices and used that to try different models. After comparing the prediction trends and test MSEs, we narrow our options to Random Forest and Lasso with Loop. 
+* ### Influential Predictors ###
 
-Lasso with Loop is appealing with its lowest MSE and better. However, we decide to stick on **Random Forest** as our choice of model. Random Forest can compute predictions with the lowest MSE among models we learned in class, and its outcome has the trend. On the other hand, we give up the attractive Lasso with Loop because of its high computation cost and our limitation in knowledge.
-
-We gained a lot of insights in coding with R to train our models, converting the machine learning theories into computation. We also had an opportunity to preview the methods to analyze time-series datasets. The fundamental take-away from our new models is that, in time-series dataset, previous observation is one of the main predictors model training. Meanwhile, we also experienced the difficulties in adding time-series variables. After this project, we will keep learing time-series theories and models, and hope to train a more proper model for our avocado business.
-
-
+* ### Reflections ###
 
 ----------
 
