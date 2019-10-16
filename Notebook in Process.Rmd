@@ -368,8 +368,8 @@ xnames <- xnames[xnames!=best_xname]
 ggplot(log_fw, aes(seq_along(xname), mse_test)) +
 geom_point() +
 geom_line() +
-geom_point(aes(y=mse_train), color="blue") +
-geom_line(aes(y=mse_train), color="blue") +
+geom_point(aes(y=mse_train), color="#AA471F") +
+geom_line(aes(y=mse_train), color="#AA471F") +
 scale_x_continuous("Variables", labels = log_fw$xname, breaks = seq_along(log_fw$xname)) +
 scale_y_continuous("MSE test") +
 theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -1166,7 +1166,7 @@ Running a loop to predict each day using previous day prediction:
 f_ts <- as.formula(AveragePrice ~ lag1_y + month + type_conventional + type_organic + 
                            PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
                            Area_NewEngland + Area_Southeast + Area_Mideast + 
-                           Area_RockyMountain + Area_GrateLakes + 
+                           Area_RockyMountain + Area_GreatLakes + 
                            Area_Southwest + Area_Plains)
 
 
@@ -1248,12 +1248,14 @@ plot_ts %>%
   summarise(mean_y = mean(AveragePrice),
             mean_yhat = mean(y_hat_ts_full)) %>% 
   ggplot() +
-  geom_line(aes(x = Date, y = mean_y), col = "blue") +
-  geom_line(aes(x = Date, y = mean_yhat), col = "red") -> ts_graph
+  geom_line(aes(x = Date, y = mean_y), col = "#356211") +
+  geom_line(aes(x = Date, y = mean_yhat), col = "#cda989") -> ts_graph
  
 ts_graph + geom_vline(aes(xintercept = as.numeric(Date[113])), 
                    linetype = "dashed", size = 1,
-                   color = "lightgreen")
+                   color = "#AA471F") + 
+  labs(title = "Lasso with Loop",
+       y = "Mean Price")
 ```
 The graph does not show much of the difference, however we know that it is better because it has lower MSE.
 
