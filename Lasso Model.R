@@ -53,17 +53,17 @@ uniqueRegion$Area[6] <- "Mideast"
 uniqueRegion$Area[7] <- "FarWest"
 uniqueRegion$Area[8] <- "Southeast"
 uniqueRegion$Area[9] <- "GreatLakes"
-uniqueRegion$Area[10] <- "GrateLakes"
-uniqueRegion$Area[11] <- "GrateLakes"
+uniqueRegion$Area[10] <- "GreatLakes"
+uniqueRegion$Area[11] <- "GreatLakes"
 uniqueRegion$Area[12] <- "Southwest"
 uniqueRegion$Area[13] <- "RockyMountain"
-uniqueRegion$Area[14] <- "GrateLakes"
-uniqueRegion$Area[15] <- "GrateLakes"
-uniqueRegion$Area[16] <- "GrateLakes"
+uniqueRegion$Area[14] <- "GreatLakes"
+uniqueRegion$Area[15] <- "GreatLakes"
+uniqueRegion$Area[16] <- "GreatLakes"
 uniqueRegion$Area[17] <- "Mideast"
 uniqueRegion$Area[18] <- "NewEngland"
 uniqueRegion$Area[19] <- "Southeast"
-uniqueRegion$Area[20] <- "GrateLakes"
+uniqueRegion$Area[20] <- "GreatLakes"
 uniqueRegion$Area[21] <- "Southeast"
 uniqueRegion$Area[22] <- "FarWest"
 uniqueRegion$Area[23] <- "FarWest"
@@ -144,7 +144,7 @@ f1 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + Total
                    + Area_NewEngland + Area_Southeast
                  + Area_Mideast + Area_RockyMountain
                  + Area_FarWest + Area_GreatLakes
-                 + Area_GrateLakes + Area_Southwest
+                 + Area_Southwest
                  + Area_Plains + Area_TotalUS)
 
 x1_train <- model.matrix(f1,avo_train)[,-1]
