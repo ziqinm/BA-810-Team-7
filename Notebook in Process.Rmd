@@ -456,7 +456,6 @@ MSE_train_stepwise
 yhat_test_stepwise <- predict(sub_model, avo_test)
 MSE_test_stepwise <- mean((avo_test$AveragePrice - yhat_test_stepwise)^2)
 MSE_test_stepwise
-
 ```
 Based on the result of summary, the best fit model contains everything except  "Area_TotalUS", "type_organic". So we excluded these two predictors to create a new formula to train the model. 
 ```{r}
@@ -561,7 +560,7 @@ lambda_min_mse_test_ridge
 
 yhat_train_ridge <- predict(fit_ridge, x1_train, s = 0.0261992)
 yhat_test_ridge <- predict(fit_ridge, x1_test, s =   0.1160787)
-yhat_1<- predict(fit_ridge, x1_avo, s = lambda_min_mse_test)
+yhat_1<- predict(fit_ridge, x1_avo, s = lambda_min_mse_test_ridge)
 ```
 
 Aggregate data into one dataframe
@@ -571,7 +570,7 @@ p1<-avo %>%
 p2<-cbind(p1, yhat_1)
 ```
 
-## Plot
+Plot
 ```{R}
 p2 %>%
   group_by(Date)%>%
@@ -1238,7 +1237,7 @@ for (i in 1:6045) {
   
 }
 ```
-The loop gives back an error, which we, unfortunately, could not resolve. (Also because this loop takes long time to run).
+The loop gives back an error, which we, unfortunately, could not resolve (Also because this loop takes long time to run).
 
 However, it somehow worked to gather prediction based on previous day prediction as variable. 
 We can see it in here:
@@ -1322,8 +1321,3 @@ The graph does not show much of the difference, however we know that it is bette
 * ### Influential Predictors ###
 
 * ### Reflections ###
-
-----------
-
-### References ###
-- 
