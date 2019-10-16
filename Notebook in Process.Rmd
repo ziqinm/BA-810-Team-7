@@ -480,13 +480,13 @@ plot1_bwd <- df2_bwd %>%
     MeanAvg=mean(AveragePrice),
     MeanAvg_hat=mean(AveragePrice_hat))%>% 
     ggplot()+
-    geom_line(aes(Date, MeanAvg),color = "blue")+
-    geom_line(aes(Date, MeanAvg_hat), color = "red")+
+    geom_line(aes(Date, MeanAvg),color = "#356211")+
+    geom_line(aes(Date, MeanAvg_hat), color = "#cda989")+
     theme_classic()
 
 plot1_bwd + geom_vline(aes(xintercept = as.numeric(Date[113])), 
                    linetype = "dashed", size = 1,
-                   color = "lightgreen")
+                   color = "#AA471F")
 ```
 
 * ### Ridge Regression ###
@@ -512,6 +512,7 @@ for (i in 1:length(fit_ridge$lambda)) {
 }
 mse_train_ridge
 mse_test_ridge
+min(mse_train_ridge)
 min(mse_test_ridge)
 ```
 
@@ -557,12 +558,12 @@ The ridge model is pretty much the same with lasso model, so we will see the dif
 
 * ### Lasso Regression ###
 
-Run lasso
+Run lasso model
 ```{r}
 lmodel <- glmnet(x1_train, y1_train, alpha = 1, nlambda = 100)
 lmodel$lambda
 ```
-Predict response
+Predict response shows the minimue mse for the train(0.06472616) and test(0.1390842). 
 ```{r}
 y1_train_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_train)
 y1_test_hat <- predict(lmodel, s = lmodel$lambda, newx = x1_test)
@@ -596,10 +597,16 @@ plot(cv.out)
 bestlam = cv.out$lambda.min
 bestlam ## the best lamdba for training dataset is same as lambda_min_mse_train
 ```
+Check the coefficient for f1 model, the result shows that there are some predictors might be eliminated. "TotalVolume", "PLU4225", SmallBags", and "Area_TotalUS". 
+```{r}
+f1coef<-coef(lmodel, s = lambda_min_mse_test)
+f1coef
+```
+
 Create a new formula for new predictors(eliminate the uncorrelated predictors)
 ```{r}
 f2 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + 
-                   PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
+                   PLU4046 + PLU4770 + LargeBags + XLargeBags + 
                    Area_NewEngland + Area_Southeast + Area_Mideast + 
                    Area_RockyMountain + Area_GreatLakes + 
                    Area_Southwest + Area_Plains)
@@ -615,10 +622,7 @@ Predict response with new predictors
 y2_train_hat <- predict(lmodel2, s = lmodel2$lambda, newx = x2_train)
 y2_test_hat <- predict(lmodel2, s = lmodel2$lambda, newx = x2_test)
 ```
-Compute MES again with new predictors
-The results shows the taining data MSE is increased
-When eliminate the predictors which don't have correlation 
-But the test data MSE still keep the same
+Compute MES again with new predictors, the results shows the taining data MSE is increased when eliminate the uncorrelated predictors, and the train MSE (0.06482449) increases a little but the test MSE reduces a little bit (0.1390709).
 ```{r}
 mse_train1 = vector()
 mse_test1 = vector()
@@ -632,33 +636,29 @@ mse_test1
 min(mse_train1)
 min(mse_test1)
 ```
-Check again with the new minumue lambda for the train and test dataset
+Check again with the new minimum lambda for the train and test dataset
 ```{r}
 lambda_min_mse_train1<- lmodel2$lambda[which.min(mse_train1)]
 lambda_min_mse_test1 <-lmodel2$lambda[which.min(mse_test1)]
 lambda_min_mse_train1
 lambda_min_mse_test1
 ```
-Check coefficients for f1 and f2 model
+Check coefficients for f2, there is no more uncorrelated predictors in our model. 
 ```{r}
-f1coef<-coef(lmodel, s = lambda_min_mse_test)
 f2coef<-coef(lmodel2, s = lambda_min_mse_test1)
-f1coef 
 f2coef
 ```
-Since the second model have the training MSE increased, 
-The ideal model is still the first "lmodel"
-We decide to use "lmodel" to run the prediction
+Since the second model have the lowest test MSE, we decided to use "lmodel2" to make the final prediction. 
 ```{r}
-y1_avo_min_lambda_hat <- predict(lmodel, s = lambda_min_mse_test, newx = x1_avo)
-class(y1_avo_min_lambda_hat)
+x2_avo <- model.matrix(f2, avo)[,-1]
+y2_avo_min_lambda_hat <- predict(lmodel2, s = lambda_min_mse_test1, newx = x2_avo)
+class(y2_avo_min_lambda_hat)
 ```
 Aggregate data into one dataframe for the first model prediction
 ```{r}
 df1<-avo %>% 
   select(Date, AveragePrice)
-df2<-cbind(df1, y1_avo_min_lambda_hat)
-colnames(df2)
+df2<-cbind(df1, y2_avo_min_lambda_hat)
 
 names(df2)[3]<-"AveragePrice_hat"
 ```
@@ -672,13 +672,13 @@ plot1 <- df2 %>%
     MeanAvg=mean(AveragePrice),
     MeanAvg_hat=mean(AveragePrice_hat)) %>%
   ggplot()+
-  geom_line(aes(Date, MeanAvg),color = "blue")+
-  geom_line(aes(Date, MeanAvg_hat), color = "red")+
+  geom_line(aes(Date, MeanAvg),color = "#356211")+
+  geom_line(aes(Date, MeanAvg_hat), color = "#cda989")+
   theme_classic()
 
 plot1 + geom_vline(aes(xintercept = as.numeric(Date[113])), 
                    linetype = "dashed", size = 1,
-                   color = "lightgreen")
+                   color = "#AA471F")
 ```
 We can see that our ridge model actually did a better job than lasso. 
 Ridge is more flexibly than lasso, maybe each variable have something to do in our data set, so ridge works better than lasso. 
@@ -1166,7 +1166,7 @@ Running a loop to predict each day using previous day prediction:
 f_ts <- as.formula(AveragePrice ~ lag1_y + month + type_conventional + type_organic + 
                            PLU4046 + PLU4770 + PLU4225 + LargeBags + XLargeBags + 
                            Area_NewEngland + Area_Southeast + Area_Mideast + 
-                           Area_RockyMountain + Area_GreatLakes + 
+                           Area_RockyMountain + Area_GrateLakes + 
                            Area_Southwest + Area_Plains)
 
 
