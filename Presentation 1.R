@@ -25,7 +25,7 @@ unique(avocado$type)
 colnames(avocado)
 glimpse(avocado)
 
-rownum(avocado)
+rownums(avocado)
 
 # Average prices by date
 avocado %>% 
