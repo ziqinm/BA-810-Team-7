@@ -148,7 +148,8 @@ f1 <- as.formula(AveragePrice ~ month + type_conventional + type_organic + Total
                  + Area_Plains + Area_TotalUS)
 # 19 predictors
 
-x1_train <- model.matrix(f1,avo_train)[,-1]
+# glmnet only accect matrix not a formula
+x1_train <- model.matrix(f1,avo_train)[,-1]   # remove the 1st column `intercept`
 x1_test <- model.matrix(f1, avo_test)[, -1]
 
 y1_train <- avo_train$AveragePrice
